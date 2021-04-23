@@ -1,0 +1,121 @@
+POST http://localhost:25565/signin HTTP/1.1
+content-type: application/json
+
+{
+    "nick": "nicki minjaj",
+    "email": "email@email.email",
+    "password": "pass"
+}
+
+###
+
+POST http://localhost:25565/login HTTP/1.1
+content-type: application/json
+
+{
+    "nick": "nicki minjaj",
+    "password": "pass"
+}
+
+###
+
+POST http://localhost:25565/sendRoundInfo HTTP/1.1
+content-type: application/json
+
+{
+    "nick": "nicki minjaj",
+    "password": "pass",
+    "results": [{"pog": "pog"}]
+}
+
+###
+
+POST http://localhost:25565/deleteAccount HTTP/1.1
+content-type: application/json
+
+{
+    "nick": "nicki minjaj",
+    "password": "pass"
+}
+
+###
+
+GET http://localhost:25565/available/nick/?nick=pog HTTP/1.1
+
+###
+
+GET http://localhost:25565/petition/getInfo/?playerID=3 HTTP/1.1
+
+###
+
+GET http://localhost:25565/available/email/?email=pog HTTP/1.1
+
+###
+
+GET http://localhost:25565/test/get HTTP/1.1
+
+###
+
+GET http://localhost:25565/test/query/?num=100 HTTP/1.1
+
+###
+
+POST http://localhost:25565/signin HTTP/1.1
+content-type: application/json
+
+{
+    "nick": "one",
+    "email": "email@email.email",
+    "password": "pass"
+}
+
+###
+
+POST http://localhost:25565/signin HTTP/1.1
+content-type: application/json
+
+{
+    "nick": "two",
+    "email": "email@email.email",
+    "password": "pass"
+}
+
+###
+
+POST http://localhost:25565/signin HTTP/1.1
+content-type: application/json
+
+{
+    "nick": "three",
+    "email": "email@email.email",
+    "password": "pass"
+}
+
+###
+
+POST http://localhost:25565/searchPair HTTP/1.1
+content-type: application/json
+
+{
+    "playerID": 1,
+    "waitTime": -1
+}
+
+###
+
+POST http://localhost:25565/searchPair HTTP/1.1
+content-type: application/json
+
+{
+    "playerID": 1,
+    "waitTime": 0
+}
+
+###
+
+POST http://localhost:25565/leaveQueue HTTP/1.1
+content-type: application/json
+
+{
+    "playerID": 0
+}
