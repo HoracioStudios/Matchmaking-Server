@@ -21,7 +21,7 @@ const onlineUsers = [];
 
 const internalErrorCodes = {MONGODOWN: 0, NOPASSWORD: 1, NOEMAILNICK: 2, WRONGLOGIN: 3, WRONGPASSWORD: 4, NOIDNICK: 5, WRONGIDNICK: 6, NOTINQUEUE: 7 };
 
-const waitSecsToRD = 2;
+const waitSecsToRD = 10;
 
 /////////////////////////////////////////////
 //PRUEBAS
