@@ -19,7 +19,7 @@ const onlineUsers = [];
 // 
 /////////////////////////////////////////////
 
-const internalErrorCodes = {MONGODOWN: 0, NOPASSWORD: 1, NOEMAILNICK: 2, WRONGLOGIN: 3, WRONGPASSWORD: 4, NOIDNICK: 5, WRONGIDNICK: 6, NOTINQUEUE: 7 };
+const internalErrorCodes = {DATABASEDOWN: 0, NOPASSWORD: 1, NOEMAILNICK: 2, WRONGLOGIN: 3, WRONGPASSWORD: 4, NOIDNICK: 5, WRONGIDNICK: 6, NOTINQUEUE: 7 };
 
 const waitSecsToRD = 10;
 
@@ -86,7 +86,7 @@ async function nickAvailability(req, res)
   }
   catch (error)
   {
-    return res.status(500).send({code: 500, internal: internalErrorCodes.MONGODOWN, message: "Mongo no acepta conexión"});
+    return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
   }
 
   //por ajustarnos a lo "estándar" en HTTP, 200 significa OK
@@ -112,7 +112,7 @@ async function emailAvailability(req, res)
   }
   catch (error)
   {
-    return res.status(500).send({code: 500, internal: internalErrorCodes.MONGODOWN, message: "Mongo no acepta conexión"});
+    return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
   }
 
   //por ajustarnos a lo "estándar" en HTTP, 200 significa OK
@@ -150,7 +150,7 @@ async function signIn(req, res)
   }
   catch (error)
   {
-    return res.status(500).send({code: 500, internal: internalErrorCodes.MONGODOWN, message: "Mongo no acepta conexión"});
+    return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
   }
 
   if(DEBUGLOG) console.log(`Added user:`);
@@ -196,7 +196,7 @@ async function verifyLogin(email, nick, password)
   }
   catch (error)
   {
-    return {code: 500, internal: internalErrorCodes.MONGODOWN, message: "Mongo no acepta conexión"};
+    return {code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"};
   }
 
   if (player === null) return {code: 400, internal: internalErrorCodes.WRONGLOGIN, message: "No se ha encontrado un jugador con esos credenciales"};
@@ -253,7 +253,7 @@ async function deleteAccount(req, res)
   }
   catch (error)
   {
-    return res.status(500).send({code: 500, internal: internalErrorCodes.MONGODOWN, message: "Mongo no acepta conexión"});
+    return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
   }
 
   // Errores: contraseña incorrecta
@@ -292,10 +292,11 @@ async function getInfo(req, res)
       try
       {
         player = await MongoJS.findPlayerByLogin({ nick: nick });
+        player = await MongoJS.findPlayerSafe(player.id);
       }
       catch (error)
       {
-        return res.status(500).send({code: 500, internal: internalErrorCodes.MONGODOWN, message: "Mongo no acepta conexión"});
+        return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
       }
     }
   }
@@ -307,7 +308,7 @@ async function getInfo(req, res)
     }
     catch (error)
     {
-      return res.status(500).send({code: 500, internal: internalErrorCodes.MONGODOWN, message: "Mongo no acepta conexión"});
+      return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
     }
   }
 
@@ -343,7 +344,7 @@ async function sendRoundInfo(req, res)
   }
   catch (error)
   {
-    return {code: 500, internal: internalErrorCodes.MONGODOWN, message: "Mongo no acepta conexión"};
+    return {code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"};
   }
 
   return res.send({code: 200});
@@ -440,7 +441,7 @@ async function searchPair(req, res)
     }
     catch (error)
     {
-      return res.status(500).send({code: 500, internal: internalErrorCodes.MONGODOWN, message: "Mongo no acepta conexión"});
+      return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
     }
   }
 
