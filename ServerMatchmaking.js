@@ -125,6 +125,8 @@ server.get('/available/email', emailAvailability);
 // CUENTAS
 /////////////////////////////////////////////
 
+const DEBUG = true;
+
 // Registro de un nuevo jugador
 // parámetros json: nick, email, password
 //asumimos que ya se ha verificado que no existan esos credenciales
@@ -146,7 +148,11 @@ async function signIn(req, res)
   try
   {
     ID = await MongoJS.getUserCount();
-    await MongoJS.addPlayer(ID, defaultParameters, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});  
+
+    if(DEBUG)
+      await MongoJS.addPlayer(ID, { rating: req.body.rating, RD: req.body.RD }, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});  
+    else
+      await MongoJS.addPlayer(ID, defaultParameters, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});  
   }
   catch (error)
   {
@@ -325,18 +331,23 @@ server.get('/petition/getInfo', getInfo);
 // ENVÍO DE DATOS
 /////////////////////////////////////////////
 
-
 //envío info tras partida
 async function sendRoundInfo(req, res)
 {
-  try
+  if(!DEBUG)
   {
-    //temp, ser4ía mejor usar access tokens pa esto, pero bueno
-    var player = await verifyLogin(req.body.email, req.body.nick, req.body.password);
-  }
-  catch(error) {}
+    
+    try
+    {
+      //temp, ser4ía mejor usar access tokens pa esto, pero bueno
+      var player = await verifyLogin(req.body.email, req.body.nick, req.body.password);
+    }
+    catch(error) {}
 
-  if(player.code !== undefined) return res.status(player.code).send(player);
+    if(player.code !== undefined) return res.status(player.code).send(player);
+  }
+  else
+    var player = { id: req.body.playerID };
 
   try
   {

@@ -1,33 +1,89 @@
-//import express from 'express';
-const express = require('express');
-const readline = require('readline')
-const server = express();
 
-const port = 25565;
 
-var cont = 0;
+var request = require('request');
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+const url = 'http://localhost:25565';
 
-rl.question((answer) => {
-  // TODO: Log the answer in a database
-  console.log(`Thank you for your valuable feedback: ${answer}`);
+var poggerinos = "";
 
-  rl.close();
-});
+var defaultLogin = {nick: "test", password: "test"};
 
-rl.on('line', (input) => {
-  res.send(cont.toString());
-});
+var arraydejugadores = [ { id: 0, rating: loquesea, rd: loquesea}, ...,  ];
+var arraydeonline = [ { id: 1, rating: loquesea, rd: loquesea, rival : false} ];
 
-server.get('/', (req, res) => {
-  cont+=1;
-  return res.send(cont.toString());
-})
+function searchPair(index)
+{
+  var poggerinos = "";
+  
+  poggerinos = request.post({
+    url:     url + '/searchPair',
+    json:    { playerID : arraydeonline[index].id, waitTime: 0 }
+  }, function(error, response, body){
+    if(!body.finished)
+      return;
 
-server.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+    arraydeonline[index].rival = body.rivalID;
+  });
+}
+
+function elBucle()
+{
+  while (true)
+  {
+    for (let index = 0; index < arraydeonline.length; index++) {
+      searchPair(index);
+    }
+
+    arraydeonline.forEach(jugadorOnline => {
+      if(!jugadorOnline.rival) return;
+
+      if(arraydeonline.find(p => p.id == jugadorOnline.rival)) 
+      {
+        simulaPartida(jugadorOnline.id, jugadorOnline.rival);
+      }
+
+      jugadorOnline.rival = false;
+      arraydeonline.find(p => p.id == jugadorOnline.rival).rival = false;
+    });
+  }
+}
+
+function simulaPartida(uno, otro)
+{
+  arraydejugadores[uno];
+  arraydejugadores[otro];
+
+  simulas la partidita con los dos rds y cosos varios
+
+  request.post({
+    url:      url + '/leaveQueue', 
+    json:     { playerID : uno }
+    }, function(error, response, body){
+      console.log(body);
+  });
+
+  request.post({
+    url:      url + '/leaveQueue', 
+    json:     { playerID : otro }
+    }, function(error, response, body){
+      console.log(body);
+  });
+
+  request.post({
+    url:      url + '/sendRoundInfo', 
+    json:     { playerID : uno, results: [ {result: resultado, time: tiempo} ] }
+    }, function(error, response, body){
+      console.log(body);
+  });
+
+  request.post({
+    url:      url + '/sendRoundInfo', 
+    json:     { playerID : otro, results: [ {result: resultado, time: tiempo} ] }
+    }, function(error, response, body){
+      console.log(body);
+  });
+}
+
+get();
+
+console.log(poggerinos);
