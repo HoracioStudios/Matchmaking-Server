@@ -134,6 +134,8 @@ const DEBUG = true;
 
 var ID = 0;
 
+var isProcessing = false;
+
 async function signIn(req, res)
 {
   var nick = req.body.nick;
@@ -145,22 +147,30 @@ async function signIn(req, res)
   if(nick === undefined && email === undefined) return res.status(400).send({code: 400, internal: internalErrorCodes.NOEMAILNICK, message: "No se ha recibido ni nick ni email"});
   else if(password === undefined) return res.status(400).send({code: 400, internal: internalErrorCodes.NOPASSWORD, message: "No se ha recibido contraseña"});
 
+  while(isProcessing) await sleep(5);
+
+  isProcessing = true;
+
   try
   {
+
     if(DEBUG)
       await MongoJS.addPlayer(ID, { rating: req.body.rating, RD: req.body.RD }, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});  
     else
       await MongoJS.addPlayer(ID, defaultParameters, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});
     
     ID++;
+
   }
   catch (error)
   {
     return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
   }
+  
+  isProcessing = false;
 
   if(DEBUGLOG) console.log(`Added user:`);
-  if(DEBUGLOG) console.log({id: ID, nick: nick, email: email, password: password});
+  if(DEBUGLOG) console.log({id: ID - 1, nick: nick, email: email, password: password});
 
   return res.send({code: 200});
 }
@@ -586,3 +596,9 @@ async function startup()
 }
 
 server.listen(port, startup);
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}  
