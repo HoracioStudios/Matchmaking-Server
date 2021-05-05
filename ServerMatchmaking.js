@@ -566,12 +566,15 @@ function test()
 {
 }
 
-server.listen(port, () => {
+async function startup()
+{
   console.log(`Server is running on port ${port}`);
 
   try
   {
-    ID = MongoJS.getUserCount();
+    ID = await MongoJS.getUserCount();
+
+    //console.log(ID);
   }
   catch (error)
   {
@@ -580,4 +583,6 @@ server.listen(port, () => {
   }
 
   test();
-});
+}
+
+server.listen(port, startup);
