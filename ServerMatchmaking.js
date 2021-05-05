@@ -131,6 +131,9 @@ const DEBUG = true;
 // parámetros json: nick, email, password
 //asumimos que ya se ha verificado que no existan esos credenciales
 // envía: {code: errorCode, internal: internalErrorCodes, message: message}
+
+var ID = 0;
+
 async function signIn(req, res)
 {
   var nick = req.body.nick;
@@ -142,17 +145,14 @@ async function signIn(req, res)
   if(nick === undefined && email === undefined) return res.status(400).send({code: 400, internal: internalErrorCodes.NOEMAILNICK, message: "No se ha recibido ni nick ni email"});
   else if(password === undefined) return res.status(400).send({code: 400, internal: internalErrorCodes.NOPASSWORD, message: "No se ha recibido contraseña"});
 
-
-  var ID;
-
   try
   {
-    ID = await MongoJS.getUserCount();
-
     if(DEBUG)
       await MongoJS.addPlayer(ID, { rating: req.body.rating, RD: req.body.RD }, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});  
     else
-      await MongoJS.addPlayer(ID, defaultParameters, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});  
+      await MongoJS.addPlayer(ID, defaultParameters, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});
+    
+    ID++;
   }
   catch (error)
   {
@@ -568,6 +568,16 @@ function test()
 
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
+
+  try
+  {
+    ID = MongoJS.getUserCount();
+  }
+  catch (error)
+  {
+    console.log("Mongo no va, se pone a 0 por defecto")
+    ID = 0;
+  }
 
   test();
 });
