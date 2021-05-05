@@ -4,37 +4,21 @@ var request = require('request');
 
 const url = 'http://localhost:25565';
 
-request.post({
-  url:     url + '/signIn',
-  json:    { nick : "joder", password: "joder" }
-}, function(error, response, body){
-  console.log(body);
-});
+var ID = 0;
 
-request.post({
-  url:     url + '/signIn',
-  json:    { nick : "aa", password: "joder" }
-}, function(error, response, body){
-  console.log(body);
-});
+async function test(name)
+{
+  request.post({
+    url:     url + '/signIn',
+    json:    { nick : "joker", password: "joder", rating: Math.random() * 3000, RD: Math.random() * 100 }
+  }, function(error, response, body){
+    //console.log(body);
+    ID++;
 
-request.post({
-  url:     url + '/signIn',
-  json:    { nick : "ss", password: "joder" }
-}, function(error, response, body){
-  console.log(body);
-});
+    console.log(ID);
+  });
+}
 
-request.post({
-  url:     url + '/signIn',
-  json:    { nick : "dd", password: "joder" }
-}, function(error, response, body){
-  console.log(body);
-});
-
-request.post({
-  url:     url + '/signIn',
-  json:    { nick : "ww", password: "joder" }
-}, function(error, response, body){
-  console.log(body);
-});
+for (let i = 0; i < 20; i++) {
+  test(i);
+}

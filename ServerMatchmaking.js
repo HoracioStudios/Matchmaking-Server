@@ -154,7 +154,7 @@ async function signIn(req, res)
   try
   {
 
-    if(DEBUG)
+    if(DEBUG && req.body.rating !== undefined && req.body.RD !== undefined)
       await MongoJS.addPlayer(ID, { rating: req.body.rating, RD: req.body.RD }, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});  
     else
       await MongoJS.addPlayer(ID, defaultParameters, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});
