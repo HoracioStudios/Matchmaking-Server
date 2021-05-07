@@ -7,7 +7,7 @@ var poggerinos = "";
 var defaultLogin = {nick: "test", password: "test"};
 
 let dataFile = require('./Bots.json');
-let users = require ('./UserInfo.json')
+let users = require ('./UserInfo.json');
 //console.log(JSON.stringify(users, null, 2))
 
 function getRandom(arr, n) {
@@ -29,24 +29,17 @@ function signIn(emailUser, nickUser, passUser, points, deviation){
     url: url + '/signin',
     json: { nick : nickUser, email : emailUser, password : passUser, rating : points, RD : deviation}
   },function(error, response, body){
-    console.log(error);
-    console.log(response);
+    //console.log(error);
+    //console.log(response);
     console.log(body);  });
 }
-
-for (let i = 0; i < Object.keys(users).length; i++){
-  signIn(users[i].email, users[i].nick, users[i].password, dataFile[i].points, dataFile[i].deviation);
-}
-
-
-let dataOnline = getRandom(dataFile, 100)
 //console.log(JSON.stringify(dataOnline, null, 2))
 
 
 function searchPair(index)
 {
   request.post({
-    url:     url + '/test/post',
+    url:     url + '/searchPair',
     json:    { playerID : dataOnline[index].id, waitTime: 0 }
   }, function(error, response, body){
     console.log(body);
@@ -135,5 +128,11 @@ function simulateGame(first, second)
   }
 }
 
-//simularJugadores();
+/*
+for (let i = 0; i < Object.keys(users).length; i++){
+  signIn(users[i].email, users[i].nick, users[i].password, dataFile[i].points, dataFile[i].deviation);
+}
+*/
 
+let dataOnline = getRandom(dataFile, 100)
+searchPair(0);

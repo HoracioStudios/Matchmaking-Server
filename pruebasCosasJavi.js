@@ -1,5 +1,5 @@
 
-
+/*
 var request = require('request');
 
 const url = 'http://localhost:25565';
@@ -19,6 +19,33 @@ async function test(name)
   });
 }
 
-for (let i = 0; i < 20; i++) {
+for (let i = 0; i < 1000; i++) {
   test(i);
 }
+*/
+
+
+let dataFile = require('./Bots.json');
+dataFileConvert = {};
+
+for (const key in dataFile) {
+  if (Object.hasOwnProperty.call(dataFile, key)) {
+    const element = dataFile[key];
+
+    element.id = Number(element.id);
+    element.points = Number(element.points);
+    element.deviation = Number(element.deviation);
+    element.rival = "";
+    
+    dataFileConvert[key] = element;
+  }
+}
+
+fs = require('fs');
+
+let pog = JSON.stringify(dataFileConvert);
+
+fs.writeFileSync('./Bots_FIXED.json', pog, function (err) {
+  if (err) return console.log(err);
+  console.log('Hello World > helloworld.txt');
+});

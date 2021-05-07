@@ -520,7 +520,7 @@ async function searchPair(req, res)
     }
     else
     {
-      onlineUsers.found = false;
+      onlineUsers[i].found = false;
       bestRival = makeTheMatch(onlineUsers[i], onlineUsers);
     }
   }
