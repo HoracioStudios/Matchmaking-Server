@@ -5,7 +5,7 @@ const DEBUGLOG = true;
 const defaultParameters = {rating: 1500, RD: 350};
 
 //NOTA: poner esto a lo que pongamos de espera en la búsqueda
-const ttlMilliseconds = 7000;
+const ttlMilliseconds = 2000;
 
 //import express from 'express';
 const Express = require('express');
@@ -391,7 +391,7 @@ function timeToLiveCleanup(onlineUserList)
     if(now - ttlMilliseconds > data.lastCheck) toDelete.push(r);
   }
 
-  console.log(toDelete);
+  //console.log(toDelete);
 
   var spliceOffset = 0;
   
@@ -423,19 +423,22 @@ function makeTheMatch(user, onlineUserList)
 
     if(minRival >= max || maxRival <= min) continue;
     
-    if(bestRival === undefined) bestRival = { index: r, playerData: rivalData };
+    if(bestRival === undefined)
+    {
+      bestRival = rivalData;
+    }
     else
     {
       var conditions = false;
 
-      conditions |= Math.abs(bestRival.playerData.rating - userData.rating) > Math.abs(rivalData.rating - userData.rating);
-      conditions |= Math.abs(bestRival.playerData.rating - userData.rating) == Math.abs(rivalData.rating - userData.rating) && rivalData.RD < bestRival.playerData.RD;
-      conditions |= rivalData.RD == bestRival.playerData.RD && rivalData.id < bestRival.playerData.id;
+
+      conditions |= Math.abs(bestRival.rating - userData.rating) > Math.abs(rivalData.rating - userData.rating);
+      conditions |= Math.abs(bestRival.rating - userData.rating) == Math.abs(rivalData.rating - userData.rating) && rivalData.RD < bestRival.RD;
+      conditions |= rivalData.RD == bestRival.RD && rivalData.id < bestRival.id;
 
       if(conditions)
       {
         bestRival = rivalData;
-        bestRival.index = r;
       }
     }
   }
@@ -484,9 +487,8 @@ async function searchPair(req, res)
   else
   {
     i = onlineUsers.findIndex(p => p.playerData.id == player.id);
-    var found = onlineUsers[i];
 
-    if(found === undefined)
+    if(i < 0)
     {
       onlineUsers.push( { playerData: player, found: false, waitTime: 0, lastCheck: Date.now() } );
       
@@ -494,9 +496,9 @@ async function searchPair(req, res)
     }
     else
     {
-      found.playerData = player;
-      found.waitTime = waitTime;
-      found.lastCheck = Date.now();
+      onlineUsers[i].playerData = player;
+      onlineUsers[i].waitTime = waitTime;
+      onlineUsers[i].lastCheck = Date.now();
     }
   }
 
@@ -504,16 +506,22 @@ async function searchPair(req, res)
 
   i += timeToLiveCleanup(onlineUsers);
 
-  console.log(onlineUsers);
+  //console.log(onlineUsers);
 
   var bestRival = undefined;
 
   if(!onlineUsers[i].found) bestRival = makeTheMatch(onlineUsers[i], onlineUsers);
   else
   {
-    var index = onlineUsers[i].found.index;
+    var index = onlineUsers.findIndex(p => p.playerData.id == onlineUsers[i].found.id);
 
-    if(onlineUsers[index].id == onlineUsers[i].found.id)
+    if (index == -1 || onlineUsers[index] === undefined)
+    {
+      var pog = 0;
+      pog++;
+    }
+
+    if(index > -1 && onlineUsers[index].playerData.id == onlineUsers[i].found.id)
     {
       bestRival = {};
       bestRival = onlineUsers[i].found;
@@ -527,8 +535,9 @@ async function searchPair(req, res)
 
   if(bestRival === undefined) return res.send({code: 200, found: false});
 
-  onlineUsers[bestRival.index].found = onlineUsers[i].playerData;
-  onlineUsers[bestRival.index].found.index = i;
+  var bestRivalIndex = onlineUsers.findIndex(p => p.playerData.id == bestRival.id);
+
+  onlineUsers[bestRivalIndex].found = onlineUsers[i].playerData;
 
   return res.send({ code: 200, found: true, finished: onlineUsers[i].found, rivalID: bestRival.id, rivalNick: bestRival.nick });
 }

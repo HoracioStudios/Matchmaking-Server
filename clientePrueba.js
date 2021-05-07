@@ -1,4 +1,4 @@
-var request = require('request');
+const request = require('request');
 
 const url = 'http://localhost:25565';
 
@@ -6,9 +6,16 @@ var poggerinos = "";
 
 var defaultLogin = {nick: "test", password: "test"};
 
+const Glicko = require('./modules/Glicko.js');
 let dataFile = require('./Bots.json');
 let users = require ('./UserInfo.json');
 //console.log(JSON.stringify(users, null, 2))
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}  
 
 function getRandom(arr, n) {
   var result = new Array(n),
@@ -31,18 +38,25 @@ function signIn(emailUser, nickUser, passUser, points, deviation){
   },function(error, response, body){
     //console.log(error);
     //console.log(response);
-    console.log(body);  });
+    console.log(body);  
+  });
 }
 //console.log(JSON.stringify(dataOnline, null, 2))
 
 
-function searchPair(index)
+async function searchPair(index)
 {
   request.post({
     url:     url + '/searchPair',
-    json:    { playerID : dataOnline[index].id, waitTime: 0 }
+    json:    { playerID : dataOnline[index].id, waitTime: 0, realIndex : index }
   }, function(error, response, body){
+    if(error !== null)
+      return;
+
     console.log(body);
+
+    if(body === undefined)
+      return;
     if(!body.finished)
       return;
 
@@ -52,34 +66,26 @@ function searchPair(index)
 
 function simularJugadores()
 {
-  while (true)
-  {
-    for (let index = 0; index < dataOnline.length; index++) {
-      searchPair(index);
+  for (let index = 0; index < dataOnline.length; index++) {
+    searchPair(index);
+  }
+
+  dataOnline.forEach(jugadorOnline => {
+    if(!jugadorOnline.rival || jugadorOnline.rival == NaN) return;
+
+    if(dataOnline.find(p => p.id == jugadorOnline.rival)) 
+    {
+      simulateGame(jugadorOnline.id, jugadorOnline.rival);
     }
 
-    dataOnline.forEach(jugadorOnline => {
-      if(!jugadorOnline.rival) return;
-
-      if(dataOnline.find(p => p.id == jugadorOnline.rival)) 
-      {
-        simulateGame(jugadorOnline.id, jugadorOnline.rival);
-      }
-
-      jugadorOnline.rival = NaN;
-      arraydeonline.find(p => p.id == jugadorOnline.rival).rival = NaN;
-    });
-  }
-}
-
-function prediction(RD1, RD2, r1, r2){
-  let elevateG = -g(Math.sqrt(RD1**2 + RD2**2))*(r1-r2)/400;
-  return 1/(1+10**elevateG);
+    dataOnline.find(p => p.id == jugadorOnline.rival).rival = NaN;
+    jugadorOnline.rival = NaN;
+  });
 }
 
 function generateRound(user1, user2){
   var results = [];
-  var result = prediction(user1.RD, user2.RD, user1.points, user2.points);
+  var result = Glicko.prediction(user1.deviation, user2.deviation, user1.points, user2.points);
   let match = Math.random();
   if(match < result){
       results[0] = 1;
@@ -111,7 +117,7 @@ function simulateGame(first, second)
 
   for (let i = 0; i < 3; i++)
   {
-    var resultado = generateRound(dataFile[first].RD, dataFile[second].RD, dataFile[first].points, dataFile[second].points);
+    var resultado = generateRound(dataFile[first], dataFile[second]);
     request.post({
       url:      url + '/sendRoundInfo', 
       json:     { playerID : first, results: [ {result: resultado[0], time: resultado[2], opponent: second} ] }
@@ -121,18 +127,13 @@ function simulateGame(first, second)
 
     request.post({
       url:      url + '/sendRoundInfo', 
-      json:     { playerID : second, results: [ {result: resultado[1], time: result[2], opponent: first} ] }
+      json:     { playerID : second, results: [ {result: resultado[1], time: resultado[2], opponent: first} ] }
       }, function(error, response, body){
         console.log(body);
     });
   }
 }
 
-/*
-for (let i = 0; i < Object.keys(users).length; i++){
-  signIn(users[i].email, users[i].nick, users[i].password, dataFile[i].points, dataFile[i].deviation);
-}
-*/
+let dataOnline = getRandom(dataFile, 5);
 
-let dataOnline = getRandom(dataFile, 100)
-searchPair(0);
+setInterval(simularJugadores, 500);
