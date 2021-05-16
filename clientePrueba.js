@@ -53,7 +53,7 @@ async function searchPair(index)
     if(error !== null)
       return;
 
-    console.log(body);
+    //console.log(body);
 
     if(body === undefined)
       return;
@@ -70,22 +70,27 @@ function simularJugadores()
     searchPair(index);
   }
 
-  dataOnline.forEach(jugadorOnline => {
-    if(!jugadorOnline.rival || jugadorOnline.rival == NaN) return;
+  if(dataOnline.length > 1)
+  {
+    dataOnline.forEach(jugadorOnline => {
+      if(!jugadorOnline.rival || jugadorOnline.rival == NaN) return;
 
-    if(dataOnline.find(p => p.id == jugadorOnline.rival)) 
-    {
-      simulateGame(jugadorOnline.id, jugadorOnline.rival);
-    }
+      if(dataOnline.find(p => p.id == jugadorOnline.rival)) 
+      {
+        simulateGame(jugadorOnline.id, jugadorOnline.rival);
+      }
 
-    dataOnline.find(p => p.id == jugadorOnline.rival).rival = NaN;
-    jugadorOnline.rival = NaN;
-  });
+      dataOnline.find(p => p.id == jugadorOnline.rival).rival = NaN;
+      jugadorOnline.rival = NaN;
+      //let index = dataOnline.indexOf(jugadorOnline);
+      //dataOnline.splice(index, 1);
+    });
+  }
 }
 
 function generateRound(user1, user2){
   var results = [];
-  var result = Glicko.prediction(user1.deviation, user2.deviation, user1.points, user2.points);
+  var result = Glicko.prediction(user1.RD, user2.RD, user1.rating, user2.rating);
   let match = Math.random();
   if(match < result){
       results[0] = 1;
@@ -101,39 +106,76 @@ function generateRound(user1, user2){
 
 function simulateGame(first, second)
 {
-  request.post({
+
+  var firstPlayer =  dataOnline.find(p => p.id == first);
+  var secondPlayer =  dataOnline.find(p => p.id == second);
+  /*request.post({
     url:      url + '/leaveQueue', 
     json:     { playerID : first }
     }, function(error, response, body){
-      console.log(body);
+      if(error !== null)
+          console.log("HAY ERROR: " + error);
+      //console.log(body);
   });
 
   request.post({
     url:      url + '/leaveQueue', 
     json:     { playerID : second }
     }, function(error, response, body){
-      console.log(body);
-  });
+      if(error !== null)
+          console.log("HAY ERROR: " + error);
+      //console.log(body);
+  });*/
 
   for (let i = 0; i < 3; i++)
   {
-    var resultado = generateRound(dataFile[first], dataFile[second]);
+    var resultado = generateRound(firstPlayer, secondPlayer);
     request.post({
       url:      url + '/sendRoundInfo', 
       json:     { playerID : first, results: [ {result: resultado[0], time: resultado[2], opponent: second} ] }
       }, function(error, response, body){
-        console.log(body);
+        if(error !== null)
+          console.log("HAY ERROR: " + error);
+        //console.log(body);
     });
 
     request.post({
       url:      url + '/sendRoundInfo', 
       json:     { playerID : second, results: [ {result: resultado[1], time: resultado[2], opponent: first} ] }
       }, function(error, response, body){
-        console.log(body);
+        if(error !== null)
+          console.log("HAY ERROR: " + error);
+        //console.log(body);
     });
   }
+
+  console.log("/////////////////////////////////////////");
+  console.log("id: " + first + " points:" + firstPlayer.rating + " RD: " + firstPlayer.RD);
+  console.log("id: " + second + " points:" + secondPlayer.rating + " RD: " + secondPlayer.RD);
+  console.log("/////////////////////////////////////////");
 }
 
-let dataOnline = getRandom(dataFile, 5);
+//for (let i = 0; i < Object.keys(users).length; i++){
+//  signIn(users[i].email, users[i].nick, users[i].password, dataFile[i].points, dataFile[i].deviation);
+//}
 
-setInterval(simularJugadores, 500);
+let dataOnline = [];
+
+function getUserByID(id){
+  request.get({
+    url:    url + '/petition/getInfo/?playerID=' + id,
+    json: {}
+  }, function (error, response, body){
+    dataOnline.push(body.data);
+  });
+}
+
+for (let i = 0; i < 10; i++)
+{
+  var x = Math.floor(Math.random() * 500);
+  getUserByID(x);
+}
+
+//let dataOnline = getRandom(dataFile, 10);
+//simularJugadores();
+setInterval(simularJugadores, 2000);

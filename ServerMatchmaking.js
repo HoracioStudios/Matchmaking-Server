@@ -5,7 +5,7 @@ const DEBUGLOG = true;
 const defaultParameters = {rating: 1500, RD: 350};
 
 //NOTA: poner esto a lo que pongamos de espera en la búsqueda
-const ttlMilliseconds = 2000;
+const ttlMilliseconds = 600000;
 
 //import express from 'express';
 const Express = require('express');
@@ -291,7 +291,7 @@ server.get('/petition/onlineUsers', (req, res) => {
 
 
 //get que devuelva la info de partidas de un jugador (victorias, derrotas, etc)
-      //server.get('/getInfo') y luego la URL de acceso sería "/getInfo/?playerID:x" => dentro de la función lo sacas con req.query.playerID
+      //server.get('/getInfo') y luego la URL de acceso sería "/getInfo/?playerID=x" => dentro de la función lo sacas con req.query.playerID
 async function getInfo(req, res)
 {
   var id = parseInt(req.query.playerID);
@@ -328,7 +328,7 @@ async function getInfo(req, res)
     }
   }
 
-  if (player === null) return res.status(400).send({code: 400, internal: internalErrorCodes.WRONGIDNICK, message: "No se ha encontrado un jugador con ese ID o nick"});
+  if (player === null) return res.status(400).send({code: 400, internal: internalErrorCodes.WRONGIDNICK, message: "No se ha encontrado un jugador con ID: " + id});
 
   var playerCopy = player;
 
@@ -407,8 +407,8 @@ function makeTheMatch(user, onlineUserList)
 {
   var userData = user.playerData;
 
-  var min = userData.rating - (userData.RD + (waitSecsToRD * userData.waitTime));
-  var max = userData.rating + (userData.RD + (waitSecsToRD * userData.waitTime));
+  var min = userData.rating - (userData.RD + (waitSecsToRD * user.waitTime));
+  var max = userData.rating + (userData.RD + (waitSecsToRD * user.waitTime));
 
   var bestRival = undefined;
 
@@ -418,10 +418,14 @@ function makeTheMatch(user, onlineUserList)
     if(rivalData.id == userData.id) continue;
     if(rivalData.found) continue;
 
-    var minRival = rivalData.rating - (rivalData.RD + (waitSecsToRD * rivalData.waitTime));
-    var maxRival = rivalData.rating + (rivalData.RD + (waitSecsToRD * rivalData.waitTime));
+    var minRival = rivalData.rating - (rivalData.RD + (waitSecsToRD * onlineUserList[r].waitTime));
+    var maxRival = rivalData.rating + (rivalData.RD + (waitSecsToRD * onlineUserList[r].waitTime));
 
-    if(minRival >= max || maxRival <= min) continue;
+    if(minRival > max || maxRival < min)
+    {
+      console.log("si");
+      continue;
+    }
     
     if(bestRival === undefined)
     {
@@ -472,9 +476,10 @@ async function searchPair(req, res)
   if (player === null) return res.status(400).send({code: 400, internal: internalErrorCodes.WRONGIDNICK, message: "No se ha encontrado un jugador con ese ID o nick"});
 
 
-  var waitTime;
-  if(waitTime === "") waitTime = Number(req.body.waitTime);
-  else waitTime = req.body.waitTime;
+  var waitTime = req.body.waitTime;
+
+  if(waitTime === undefined) waitTime = 0;
+  else if(waitTime === "") waitTime = Number(waitTime);
 
   var i = 0;
 
@@ -538,6 +543,11 @@ async function searchPair(req, res)
   var bestRivalIndex = onlineUsers.findIndex(p => p.playerData.id == bestRival.id);
 
   onlineUsers[bestRivalIndex].found = onlineUsers[i].playerData;
+
+  console.log("Usuario: ");
+  console.log("ID: " + onlineUsers[i].playerData.id + " Rating: " + onlineUsers[i].playerData.rating + " RD: " + onlineUsers[i].playerData.RD);
+  console.log("Rival:");
+  console.log("ID: " + bestRival.id + " Rating: " + bestRival.rating + " RD: " + bestRival.RD);
 
   return res.send({ code: 200, found: true, finished: onlineUsers[i].found, rivalID: bestRival.id, rivalNick: bestRival.nick });
 }
