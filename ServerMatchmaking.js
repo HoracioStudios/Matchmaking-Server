@@ -300,14 +300,14 @@ function logOut(req, res)
   const { refreshToken } = req.body;
 
   if (!refreshToken) {
-      return res.sendStatus(400);
+      return res.status(400).send( { message: "Petición inválida, no se ha enviado ningún dato" } );
   }
 
   refreshTokens = refreshTokens.filter(t => t !== refreshToken);
 
   res.sendStatus(200);
 }
-server.delete('/accounts/sessions', logOut);
+server.delete('/accounts/sessions', authenticateJWT, logOut);
 
 async function refreshSession(req, res)
 {
@@ -395,7 +395,7 @@ async function sendRoundInfo(req, res)
   }
   catch (error)
   {
-    return {message: "Base de datos no acepta conexión"};
+    return res.status(502).send( {message: "Base de datos no acepta conexión"} );
   }
 
   return res.sendStatus(200);
@@ -496,7 +496,7 @@ async function addToQueue(req, res)
   if(DEBUG) id = req.body.id;
   else id = req.user.id;
 
-  var waitTime = req.body.waitTime;
+  var waitTime = req.query.waitTime;
   if(waitTime === undefined) waitTime = 0;
   else if(waitTime === "") waitTime = Number(waitTime);
 
