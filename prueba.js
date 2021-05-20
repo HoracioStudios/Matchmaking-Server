@@ -1,16 +1,65 @@
-// Se carga el módulo de HTTP
-var http = require("http");
+const MongoJS = require('./modules/mongoJS.js');
 
-// Creación del servidor HTTP, y se define la escucha
-// de peticiones en el puerto 8000
-http.createServer(function(request, response) {
+const DEBUGLOG = true;
 
-   // Se define la cabecera HTTP, con el estado HTTP (OK: 200) y el tipo de contenido
-   response.writeHead(200, {'Content-Type': 'text/plain'});
+const DEBUG = false;
 
-   // Se responde, en el cuerpo de la respuesta con el mensaje "Hello World"
-   response.end('Hola asdfasdf!\n');
-}).listen(8000);
+//NOTA: poner esto a lo que pongamos de espera en la búsqueda
+const ttlMilliseconds = 2000;
 
-// Se escribe la URL para el acceso al servidor
-console.log('Servidor en la url http://127.0.0.1:8000/');
+//import express from 'express';
+const Express = require('express');
+const server = Express();
+server.use(Express.json())
+const port = 25565;
+
+const onlineUsers = [];
+
+//archivo index.js
+var fs = require('fs');
+var https = require('https');
+
+https.createServer({
+   cert: fs.readFileSync('certificate.crt'),
+   key: fs.readFileSync('privateKey.key')
+ },server).listen(port, startup);
+
+async function startup()
+{
+   console.log(`Server is running on port ${port}`);
+
+   try
+   {
+      ID = await MongoJS.getUserCount();
+
+      //console.log(ID);
+   }
+   catch (error)
+   {
+      console.log("Base de datos no va, se pone a 0 por defecto")
+      ID = 0;
+   }
+}
+
+
+/////////////////////////////////////////////
+
+const authenticateJWT = (req, res, next) => {
+
+   console.log("yay");
+   next();
+ };
+
+server.post('/token', (req, res) => {
+});
+
+async function poggers(req, res)
+{
+   console.log("yay 2");
+
+   res.send('Book added successfully');
+}
+
+server.get('/joder', authenticateJWT, poggers);
+
+/////////////////////////////////////////////

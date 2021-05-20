@@ -2,6 +2,8 @@ const MongoJS = require('./modules/mongoJS.js');
 
 const DEBUGLOG = true;
 
+const DEBUG = false;
+
 const defaultParameters = {rating: 1500, RD: 350};
 
 //NOTA: poner esto a lo que pongamos de espera en la búsqueda
@@ -15,11 +17,60 @@ const port = 25565;
 
 const onlineUsers = [];
 
-/////////////////////////////////////////////
-// 
+if(DEBUG)
+{
+  server.listen(port, startup);
+}
+else
+{
+  //archivo index.js
+  var fs = require('fs');
+  var https = require('https');
+  
+  https.createServer({
+     cert: fs.readFileSync('certificate.crt'),
+     key: fs.readFileSync('privateKey.key')
+   }, server).listen(port, startup);
+}
+
+ 
+const authTokenExpiration = '5m';
+
+const JWT = require('jsonwebtoken');
+
+const secret = "poggers";
+const refreshSecret = "poggerinos";
+
+var refreshTokens = [];
+
 /////////////////////////////////////////////
 
-const internalErrorCodes = {DATABASEDOWN: 0, NOPASSWORD: 1, NOEMAILNICK: 2, WRONGLOGIN: 3, WRONGPASSWORD: 4, NOIDNICK: 5, WRONGIDNICK: 6, NOTINQUEUE: 7 };
+const authenticateJWT = (req, res, next) =>
+{
+  if(DEBUG)
+    next();
+  else
+  {
+    const authHeader = req.headers.authorization;
+
+    if (authHeader) {
+        const token = authHeader.split(' ')[1];
+
+        JWT.verify(token, secret, (err, user) => {
+            if (err) {
+                return res.sendStatus(403);
+            }
+
+            req.user = user;
+            next();
+        });
+    } else {
+        res.sendStatus(401);
+    }
+  }
+};
+
+/////////////////////////////////////////////
 
 const waitSecsToRD = 10;
 
@@ -31,106 +82,80 @@ const waitSecsToRD = 10;
 // envía: {reply: "reply"}
 function getTest(req, res)
 {
-  if(DEBUGLOG) console.log(`Se hizo get`);
-
-  return res.send("reply");
-}
-server.get('/test/get', getTest);
-
-// Prueba de query
-//"/test/query/?num=x"
-// envía: {reply: num ^2}
-function queryTest(req, res)
-{
-  if(DEBUGLOG) console.log(`Se hizo get con query`);
-  
   let num = req.query.num;
 
-  if(DEBUGLOG) console.log(`num es ${num}`);
+  if(num !== undefined)
+  {
+    if(DEBUGLOG) console.log(`Se hizo get con query`);
+    
+    if(DEBUGLOG) console.log(`num es ${num}`);
+    
+    return res.send({reply: num * num});
+  }
 
-  return res.send({reply: num * num});
+  if(DEBUGLOG) console.log(`Se hizo get`);
+  
+  return res.send("reply");
 }
-server.get('/test/query', queryTest);
+server.get('/test', getTest);
 
 // Prueba de post
 // envía: {reply: req.body}
 function postTest(req, res)
 {
-  console.log(`Se hizo post`);
-  console.log(req.body.data);
+  if(DEBUGLOG) console.log(`Se hizo post`);
+  if(DEBUGLOG) console.log(req.body);
   return res.send(req.body);
 }
-server.post('/test/post', postTest)
-
-
-
-/////////////////////////////////////////////
-// DISPONIBILIDAD
-/////////////////////////////////////////////
-
-// Comprobar si un nick está libre
-//"/available/nick/?nick=x"
-// nos aseguramos en el juego que el nick sea válido
-// envía: {code: errorCode, internal: internalErrorCodes, message: message, reply: bool}
-async function nickAvailability(req, res)
-{
-  let nick = req.query.nick;
-
-  if(DEBUGLOG) console.log(`Se quiere verificar si se puede usar el nick "${nick}"`);
-
-  var exists;
-  
-  try
-  {
-    exists = await MongoJS.isNickAvailable(nick);
-  }
-  catch (error)
-  {
-    return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
-  }
-
-  //por ajustarnos a lo "estándar" en HTTP, 200 significa OK
-  return res.send({code: 200, reply: exists});
-}
-server.get('/available/nick', nickAvailability);
-
-// Comprobar si un email está libre 
-//"/available/email/?email=x"
-// nos aseguramos en el juego que el email sea válido
-// envía: {code: errorCode, internal: internalErrorCodes, message: message, reply: bool}
-async function emailAvailability(req, res)
-{
-  let email = req.query.email;
-
-  if(DEBUGLOG) console.log(`Se quiere verificar si se puede usar el email "${email}"`);
-
-  var exists;
-
-  try
-  {
-    exists = await MongoJS.isEmailAvailable(email);
-  }
-  catch (error)
-  {
-    return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
-  }
-
-  //por ajustarnos a lo "estándar" en HTTP, 200 significa OK
-  return res.send({code: 200, reply: exists});
-}
-server.get('/available/email', emailAvailability);
+server.post('/test', postTest)
 
 
 /////////////////////////////////////////////
 // CUENTAS
 /////////////////////////////////////////////
 
-const DEBUG = true;
+// Comprobar si un nick o email está libre
+//"/available/?nick=x&email=x"
+// nos aseguramos en el juego que el nick/email sea válido
+// envía: {message: message, emailAvailable: bool, nickAvailable: bool}
+async function availability(req, res)
+{
+  let email = req.query.email;
+
+  let nick = req.query.nick;
+
+  if(email === nick && email === undefined)
+    return res.status(400).send({message: "Petición inválida, no se ha enviado ningún dato"});
+
+  var reply = {};
+  
+  try
+  {
+    if(email !== undefined)
+    {
+      if(DEBUGLOG) console.log(`Se quiere verificar si se puede usar el email "${email}"`);
+      reply.emailAvailable = await MongoJS.isEmailAvailable(email);
+    }
+    if(nick !== undefined)
+    {
+      if(DEBUGLOG) console.log(`Se quiere verificar si se puede usar el nick "${nick}"`);
+      reply.nickAvailable = await MongoJS.isNickAvailable(nick);
+    }
+  }
+  catch (error)
+  {
+    return res.status(502).send({message: "Base de datos no acepta conexión"});
+  }
+
+  return res.send(reply);
+}
+
+server.get('/accounts/check-availability', availability);
 
 // Registro de un nuevo jugador
 // parámetros json: nick, email, password
 //asumimos que ya se ha verificado que no existan esos credenciales
-// envía: {code: errorCode, internal: internalErrorCodes, message: message}
+// envía: {message: message}
 
 var ID = 0;
 
@@ -141,30 +166,29 @@ async function signIn(req, res)
   var nick = req.body.nick;
   var email = req.body.email;
   var password = req.body.password;
-  if(DEBUGLOG) console.log(`Player ${nick} is signing in`);
-
   
-  if(nick === undefined && email === undefined) return res.status(400).send({code: 400, internal: internalErrorCodes.NOEMAILNICK, message: "No se ha recibido ni nick ni email"});
-  else if(password === undefined) return res.status(400).send({code: 400, internal: internalErrorCodes.NOPASSWORD, message: "No se ha recibido contraseña"});
-
+  
+  if(nick === undefined || email === undefined || password === undefined) 
+  return res.status(400).send({message: "Petición inválida, no se ha enviado ningún dato o faltan datos"});
+  
   while(isProcessing) await sleep(5);
-
+  
   isProcessing = true;
+
+  if(DEBUGLOG) console.log(`Player ${nick} is signing in`);
 
   try
   {
-
     if(DEBUG && req.body.rating !== undefined && req.body.RD !== undefined)
       await MongoJS.addPlayer(ID, { rating: req.body.rating, RD: req.body.RD }, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});  
     else
       await MongoJS.addPlayer(ID, defaultParameters, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});
     
     ID++;
-
   }
   catch (error)
   {
-    return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
+    return res.status(502).send({message: "Base de datos no acepta conexión"});
   }
   
   isProcessing = false;
@@ -172,25 +196,50 @@ async function signIn(req, res)
   if(DEBUGLOG) console.log(`Added user:`);
   if(DEBUGLOG) console.log({id: ID - 1, nick: nick, email: email, password: password});
 
-  return res.send({code: 200});
+  return res.sendStatus(200);
 }
-server.post('/signin', signIn);
+server.post('/accounts', signIn);
 
+
+// Se usa para borrar una cuenta. POR AHORA Se envía email o nick (o ambos, pero email tiene preferencia) y la contraseña hasheada
+// parámetros json: nick, email, password
+// envía: {message: message}
+// message es para nosotros
+// (empleamos estándar de HTTP) => 200 = no hay errores, 400 = error de cliente
+async function deleteAccount(req, res)
+{
+  var id;
+
+  if(DEBUG) id = req.body.id;
+  else id = req.user.id;
+
+  try
+  {
+    await MongoJS.deletePlayerByID(id);
+  }
+  catch (error)
+  {
+    if(DEBUGLOG) console.log(error);
+    return res.status(502).send({message: "Base de datos no acepta conexión"});
+  }
+
+  return res.sendStatus(200);
+}
+server.delete('/accounts', authenticateJWT, deleteAccount);
 
 // Se usa para hacer log in de los jugadores. Se envía email o nick (o ambos, pero email tiene preferencia) y la contraseña hasheada
 // parámetros json: nick, email, password
-// envía: {code: errorCode, message: message, internal: internalErrorCode}
-// message es para nosotros, y internal sirve para buscar el mensaje de error en las tablas de idiomas. Internal depende de la acción realizada, NO ES GLOBAL
+// envía: {message: message}
+// message es para nosotros
 // (empleamos estándar de HTTP) => 200 = no hay errores, 400 = error de cliente
 async function verifyLogin(email, nick, password)
 {
-
   var query = {};
 
   //siempre se prioriza el login con email
   if(email === undefined)
   {
-    if(nick === undefined) return {code: 400, internal: internalErrorCodes.NOEMAILNICK, message: "No se ha recibido ni email ni nick."};
+    if(nick === undefined) return {status: 400, message: "Petición inválida, no se ha enviado ningún dato"};
 
     else
     {
@@ -212,13 +261,11 @@ async function verifyLogin(email, nick, password)
   }
   catch (error)
   {
-    return {code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"};
+    return {status: 502, message: "Base de datos no acepta conexión"};
   }
 
-  if (player === null) return {code: 400, internal: internalErrorCodes.WRONGLOGIN, message: "No se ha encontrado un jugador con esos credenciales"};
-  else if (player.password != password) return {code: 400, internal: internalErrorCodes.WRONGPASSWORD, message: "Contraseña incorrecta"};
+  if (player === null || player.password != password) return {status: 404, message: "No se ha encontrado un jugador con esos credenciales"};
 
-  // Errores: contraseña incorrecta
   return player;
 }
 
@@ -234,85 +281,83 @@ async function logIn(req, res)
   }
   catch(error) {}
 
-  if(result.code !== undefined) return res.status(result.code).send(result);
+  if(result.status !== undefined) return res.status(result.status).send(result.message);
 
   await MongoJS.logLogin(result.id);
 
-  // Errores: contraseña incorrecta
-  return res.send({code: 200, ID: result.id});
+  // Generate an access token
+  const accessToken = JWT.sign({ nick: nick, id: result.id, email: email }, secret, { expiresIn: authTokenExpiration });
+  const refreshToken = JWT.sign({ nick: nick, id: result.id, email: email }, refreshSecret);
+
+  refreshTokens.push(refreshToken);
+
+  return res.send({id: result.id, accessToken: accessToken, refreshToken: refreshToken});
 }
-server.post('/login', logIn);
+server.post('/accounts/sessions', logIn);
 
-
-// Se usa para borrar una cuenta. POR AHORA Se envía email o nick (o ambos, pero email tiene preferencia) y la contraseña hasheada
-// parámetros json: nick, email, password
-// envía: {code: errorCode, message: message, internal: internalErrorCode}
-// message es para nosotros, y internal sirve para buscar el mensaje de error en las tablas de idiomas. Internal depende de la acción realizada, NO ES GLOBAL
-// (empleamos estándar de HTTP) => 200 = no hay errores, 400 = error de cliente
-async function deleteAccount(req, res)
+function logOut(req, res)
 {
-  var email = req.body.email;
-  var nick = req.body.nick;
-  var password = req.body.password;
-  
-  try
-  {
-    var result = await verifyLogin(email, nick, password);
-  }
-  catch(error) {}
+  const { refreshToken } = req.body;
 
-  if(result.code !== undefined) return res.status(result.code).send(result);
-  
-  try
-  {
-    await MongoJS.deletePlayerByID(result.id);
-  }
-  catch (error)
-  {
-    return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
+  if (!refreshToken) {
+      return res.sendStatus(400);
   }
 
-  // Errores: contraseña incorrecta
-  return res.send({code: 200});
+  refreshTokens = refreshTokens.filter(t => t !== refreshToken);
+
+  res.sendStatus(200);
 }
-server.post('/deleteAccount', deleteAccount);
+server.delete('/accounts/sessions', logOut);
 
+async function refreshSession(req, res)
+{
+  const { refreshToken } = req.body;
 
-/////////////////////////////////////////////
-// PETICIONES DE DATOS
-/////////////////////////////////////////////
+  if (!refreshToken) {
+      return res.sendStatus(400);
+  }
 
-// Devuelve la lista de usuarios online (IDs de jugadores)
-// envía: {code: errorCode, onlineUsers: onlineUsers}
-server.get('/petition/onlineUsers', (req, res) => {
+  if (!refreshTokens.includes(refreshToken)) {
+      return res.sendStatus(403);
+  }
 
-  return res.send({code: 200, onlineUsers: onlineUsers});
-});
+  JWT.verify(refreshToken, refreshSecret, (err, user) => {
+      if (err) {
+          return res.sendStatus(403);
+      }
+
+      const accessToken = JWT.sign({ nick: user.nick, id: user.id, email: user.email }, secret, { expiresIn: authTokenExpiration });
+
+      res.json({
+          accessToken
+      });
+  });
+}
+server.post('/accounts/sessions/refresh', refreshSession);
 
 
 //get que devuelva la info de partidas de un jugador (victorias, derrotas, etc)
       //server.get('/getInfo') y luego la URL de acceso sería "/getInfo/?playerID=x" => dentro de la función lo sacas con req.query.playerID
 async function getInfo(req, res)
 {
-  var id = parseInt(req.query.playerID);
-  var nick = req.query.playerNick;
+  var id = parseInt(req.params.id);
+  var nick = req.params.nick;
 
   var player;
 
-  if(id === undefined || id === NaN)
+  if(id === undefined || isNaN(id))
   {
-    if(nick === undefined) return res.status(400).send({code: 400, internal: internalErrorCodes.NOIDNICK, message: "No se ha recibido un ID o nick."});
+    if(nick === undefined) return res.status(400).send({message: "Petición inválida, no se ha enviado ningún dato"});
 
     else
     {
       try
       {
-        player = await MongoJS.findPlayerByLogin({ nick: nick });
-        player = await MongoJS.findPlayerSafe(player.id);
+        player = await MongoJS.findPlayerSafe({ nick: nick });
       }
       catch (error)
       {
-        return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
+        return res.status(502).send({message: "Base de datos no acepta conexión"});
       }
     }
   }
@@ -320,62 +365,55 @@ async function getInfo(req, res)
   {
     try
     {
-      player = await MongoJS.findPlayerSafe(id);
+      player = await MongoJS.findPlayerSafe({ id: id });
     }
     catch (error)
     {
-      return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
+      return res.status(502).send({message: "Base de datos no acepta conexión"});
     }
   }
 
-  if (player === null) return res.status(400).send({code: 400, internal: internalErrorCodes.WRONGIDNICK, message: "No se ha encontrado un jugador con ID: " + id});
+  if (player === null) return res.status(404).send({message: "No se ha encontrado jugador"});
 
-  var playerCopy = player;
-
-  return res.send({code: 200, data: playerCopy});
+  return res.send(player);
 }
-server.get('/petition/getInfo', getInfo);
-
-
-/////////////////////////////////////////////
-// ENVÍO DE DATOS
-/////////////////////////////////////////////
+//by-id y by-nick inspirado en RIOT: https://developer.riotgames.com/apis#account-v1/GET_getByPuuid
+server.get('/accounts/by-id/:id', getInfo);
+server.get('/accounts/by-nick/:nick', getInfo);
 
 //envío info tras partida
 async function sendRoundInfo(req, res)
 {
-  if(!DEBUG)
-  {
-    
-    try
-    {
-      //temp, ser4ía mejor usar access tokens pa esto, pero bueno
-      var player = await verifyLogin(req.body.email, req.body.nick, req.body.password);
-    }
-    catch(error) {}
+  var id;
 
-    if(player.code !== undefined) return res.status(player.code).send(player);
-  }
-  else
-    var player = { id: req.body.playerID };
+  if(DEBUG) id = req.body.id;
+  else id = req.user.id;
 
   try
   {
-    await MongoJS.updatePlayerResults(player.id, req.body.results);
+    await MongoJS.updatePlayerResults(id, req.body.results);
   }
   catch (error)
   {
-    return {code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"};
+    return {message: "Base de datos no acepta conexión"};
   }
 
-  return res.send({code: 200});
+  return res.sendStatus(200);
 }
-server.post('/sendRoundInfo', sendRoundInfo);
+server.post('/accounts/rounds', authenticateJWT, sendRoundInfo);
 
 
 /////////////////////////////////////////////
 // MATCHMAKING
 /////////////////////////////////////////////
+
+
+// Devuelve la lista de usuarios online (IDs de jugadores)
+// envía: {status: errorCode, onlineUsers: onlineUsers}
+server.get('/matchmaking/user-list', (req, res) => {
+
+  return res.send(onlineUsers);
+});
 
 //NOTA: esto se hace por petición, el emparejamiento ocurre cada vez que se llama al servicio. Asumo que está chido así.
 
@@ -423,7 +461,6 @@ function makeTheMatch(user, onlineUserList)
 
     if(minRival > max || maxRival < min)
     {
-      console.log("si");
       continue;
     }
     
@@ -452,59 +489,68 @@ function makeTheMatch(user, onlineUserList)
 
 //proceso matchmaking
 //IMPORTANTE: DEBE SEGUIR HACIÉNDOSE HASTA QUE AMBOS ESTÉN EN LA SALA. POR SI SE DESCONECTA EL OPONENTE.
+async function addToQueue(req, res)
+{
+  var id;
+
+  if(DEBUG) id = req.body.id;
+  else id = req.user.id;
+
+  var waitTime = req.body.waitTime;
+  if(waitTime === undefined) waitTime = 0;
+  else if(waitTime === "") waitTime = Number(waitTime);
+
+  try
+  {
+    var player = await MongoJS.findPlayerSafe(id);
+  }
+  catch (error)
+  {
+    return res.status(502).send({message: "Base de datos no acepta conexión"});
+  }
+  
+  onlineUsers.push( { playerData: player, found: false, waitTime: waitTime, lastCheck: Date.now() } );
+
+  //enviar algo??
+
+  res.sendStatus(200);
+}
+server.post('/matchmaking', authenticateJWT, addToQueue);
+
+//proceso matchmaking
+//IMPORTANTE: DEBE SEGUIR HACIÉNDOSE HASTA QUE AMBOS ESTÉN EN LA SALA. POR SI SE DESCONECTA EL OPONENTE.
 async function searchPair(req, res)
 {
   var id;
-  if(id === "") id = parseInt(req.body.playerID);
-  else id = req.body.playerID;
 
-  var player;
+  if(DEBUG) id = req.query.id;
+  else id = req.user.id;
 
-  if(id === undefined || id === NaN) return res.status(400).send({code: 400, internal: internalErrorCodes.NOIDNICK, message: "No se ha recibido un ID o nick."});
-  else
-  {
-    try
-    {
-      player = await MongoJS.findPlayerSafe(id);
-    }
-    catch (error)
-    {
-      return res.status(500).send({code: 500, internal: internalErrorCodes.DATABASEDOWN, message: "Mongo no acepta conexión"});
-    }
-  }
-
-  if (player === null) return res.status(400).send({code: 400, internal: internalErrorCodes.WRONGIDNICK, message: "No se ha encontrado un jugador con ese ID o nick"});
-
-
-  var waitTime = req.body.waitTime;
+  var waitTime = req.query.waitTime;
 
   if(waitTime === undefined) waitTime = 0;
   else if(waitTime === "") waitTime = Number(waitTime);
 
   var i = 0;
 
-  if(waitTime < 0)
+  i = onlineUsers.findIndex(p => p.playerData.id == id);
+
+  if(i < 0)
   {
-    onlineUsers.push( { playerData: player, found: false, waitTime: 0, lastCheck: Date.now() } );
-    
-    i = onlineUsers.length - 1;
+    return res.status(404).send({ message: "Este usuario no está en la lista" });
   }
   else
   {
-    i = onlineUsers.findIndex(p => p.playerData.id == player.id);
-
-    if(i < 0)
+    try
     {
-      onlineUsers.push( { playerData: player, found: false, waitTime: 0, lastCheck: Date.now() } );
-      
-      i = onlineUsers.length - 1;
+      onlineUsers[i].playerData = await MongoJS.findPlayerSafe(id);
     }
-    else
+    catch (error)
     {
-      onlineUsers[i].playerData = player;
-      onlineUsers[i].waitTime = waitTime;
-      onlineUsers[i].lastCheck = Date.now();
+      return res.status(502).send({message: "Base de datos no acepta conexión"});
     }
+    onlineUsers[i].waitTime = waitTime;
+    onlineUsers[i].lastCheck = Date.now();
   }
 
   //console.log(onlineUsers);
@@ -538,39 +584,35 @@ async function searchPair(req, res)
     }
   }
 
-  if(bestRival === undefined) return res.send({code: 200, found: false});
+  if(bestRival === undefined) return res.send({ found: false });
 
   var bestRivalIndex = onlineUsers.findIndex(p => p.playerData.id == bestRival.id);
 
   onlineUsers[bestRivalIndex].found = onlineUsers[i].playerData;
 
-  console.log("Usuario: ");
-  console.log("ID: " + onlineUsers[i].playerData.id + " Rating: " + onlineUsers[i].playerData.rating + " RD: " + onlineUsers[i].playerData.RD);
-  console.log("Rival:");
-  console.log("ID: " + bestRival.id + " Rating: " + bestRival.rating + " RD: " + bestRival.RD);
-
-  return res.send({ code: 200, found: true, finished: onlineUsers[i].found, rivalID: bestRival.id, rivalNick: bestRival.nick });
+  return res.send({ found: true, finished: onlineUsers[i].found, rivalID: bestRival.id, rivalNick: bestRival.nick });
 }
-server.post('/searchPair', searchPair);
+server.get('/matchmaking', authenticateJWT, searchPair);
 
 //salirse de la cola (tanto por cancelado como por haber encontrado pareja)
 //IMPORTANTE: SALIR SOLO DESPUÉS DE HABER EMPAREJADO A AMBOS EN LA SALA. NO ANTES.
-async function leaveQueue(req, res)
+function leaveQueue(req, res)
 {
   var id;
-  if(id === "") id = parseInt(req.body.playerID);
-  else id = req.body.playerID;
+
+  if(DEBUG) id = req.body.id;
+  else id = req.user.id;
   
   var i = onlineUsers.findIndex(p => p.playerData.id == id);
 
   if(i < 0)
-    return res.status(400).send({ code: 400, internal: internalErrorCodes.NOTINQUEUE, message: "Este id no está en la lista" });
+    return res.status(404).send({ message: "Este usuario no está en la lista" });
 
   onlineUsers.splice(i, 1);
 
-  return res.send({ code: 200 });
+  return res.sendStatus(200);
 }
-server.post('/leaveQueue', leaveQueue);
+server.delete('/matchmaking', authenticateJWT, leaveQueue);
 
 
 /////////////////////////////////////////////
@@ -591,10 +633,6 @@ server.get('/version', (req, res) => {
   return res.send(version);
 });
 
-function test()
-{
-}
-
 async function startup()
 {
   console.log(`Server is running on port ${port}`);
@@ -607,14 +645,10 @@ async function startup()
   }
   catch (error)
   {
-    console.log("Mongo no va, se pone a 0 por defecto")
+    console.log("Base de datos no va, se pone a 0 por defecto")
     ID = 0;
   }
-
-  test();
 }
-
-server.listen(port, startup);
 
 function sleep(ms) {
   return new Promise((resolve) => {

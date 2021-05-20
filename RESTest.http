@@ -1,4 +1,4 @@
-POST http://localhost:25565/signin HTTP/1.1
+POST https://localhost:25565/accounts HTTP/1.1
 content-type: application/json
 
 {
@@ -9,7 +9,53 @@ content-type: application/json
 
 ###
 
-POST http://localhost:25565/login HTTP/1.1
+POST https://localhost:25565/accounts/sessions HTTP/1.1
+content-type: application/json
+
+{
+    "email": "email@email.email",
+    "password": "pass"
+}
+
+###
+
+POST https://localhost:25565/accounts/sessions/refresh HTTP/1.1
+content-type: application/json
+
+{
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NTAwLCJlbWFpbCI6ImVtYWlsQGVtYWlsLmVtYWlsIiwiaWF0IjoxNjIxMTc0NjgyfQ.WdlAMkGFoVakVwHbEh75sGDqQIZw67HHh8o6VJMSHiA"
+}
+
+###
+
+DELETE https://localhost:25565/accounts/sessions HTTP/1.1
+content-type: application/json
+
+{
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NTAwLCJlbWFpbCI6ImVtYWlsQGVtYWlsLmVtYWlsIiwiaWF0IjoxNjIxMTc0NjgyfQ.WdlAMkGFoVakVwHbEh75sGDqQIZw67HHh8o6VJMSHiA"
+}
+
+###
+
+DELETE https://localhost:25565/accounts HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NTAwLCJlbWFpbCI6ImVtYWlsQGVtYWlsLmVtYWlsIiwiaWF0IjoxNjIxMTc1MTExLCJleHAiOjE2MjExNzYzMTF9.QXexgyAttjNuwHRa3_Ji8PQQvRLq2qWGyfZPMQBX3lo
+
+{
+}
+
+###
+
+DELETE https://localhost:25565/matchmaking HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NTAwLCJlbWFpbCI6ImVtYWlsQGVtYWlsLmVtYWlsIiwiaWF0IjoxNjIxMTc0NjgyLCJleHAiOjE2MjExNzU4ODJ9.xMNmQ6O6FcWK-DMZYF6REcqwOmnxDrQGtRue19381tA
+
+{
+}
+
+###
+
+POST https://localhost:25565/deleteAccount HTTP/1.1
 content-type: application/json
 
 {
@@ -19,48 +65,27 @@ content-type: application/json
 
 ###
 
-POST http://localhost:25565/sendRoundInfo HTTP/1.1
-content-type: application/json
-
-{
-    "nick": "nicki minjaj",
-    "password": "pass",
-    "results": [{"pog": "pog"}]
-}
+GET https://localhost:25565/available/nick/?nick=pog HTTP/1.1
 
 ###
 
-POST http://localhost:25565/deleteAccount HTTP/1.1
-content-type: application/json
-
-{
-    "nick": "nicki minjaj",
-    "password": "pass"
-}
+GET https://localhost:25565/petition/getInfo/?playerID=3 HTTP/1.1
 
 ###
 
-GET http://localhost:25565/available/nick/?nick=pog HTTP/1.1
+GET https://localhost:25565/available/email/?email=pog HTTP/1.1
 
 ###
 
-GET http://localhost:25565/petition/getInfo/?playerID=3 HTTP/1.1
+GET https://localhost:25565/test/get HTTP/1.1
 
 ###
 
-GET http://localhost:25565/available/email/?email=pog HTTP/1.1
+GET https://localhost:25565/test/query/?num=100 HTTP/1.1
 
 ###
 
-GET http://localhost:25565/test/get HTTP/1.1
-
-###
-
-GET http://localhost:25565/test/query/?num=100 HTTP/1.1
-
-###
-
-POST http://localhost:25565/signin HTTP/1.1
+POST https://localhost:25565/signin HTTP/1.1
 content-type: application/json
 
 {
@@ -71,7 +96,7 @@ content-type: application/json
 
 ###
 
-POST http://localhost:25565/signin HTTP/1.1
+POST https://localhost:25565/signin HTTP/1.1
 content-type: application/json
 
 {
@@ -82,7 +107,7 @@ content-type: application/json
 
 ###
 
-POST http://localhost:25565/signin HTTP/1.1
+POST https://localhost:25565/signin HTTP/1.1
 content-type: application/json
 
 {
@@ -93,7 +118,7 @@ content-type: application/json
 
 ###
 
-POST http://localhost:25565/searchPair HTTP/1.1
+POST https://localhost:25565/searchPair HTTP/1.1
 content-type: application/json
 
 {
@@ -103,7 +128,7 @@ content-type: application/json
 
 ###
 
-POST http://localhost:25565/searchPair HTTP/1.1
+POST https://localhost:25565/searchPair HTTP/1.1
 content-type: application/json
 
 {
@@ -113,9 +138,51 @@ content-type: application/json
 
 ###
 
-POST http://localhost:25565/leaveQueue HTTP/1.1
+POST https://localhost:25565/leaveQueue HTTP/1.1
 content-type: application/json
 
 {
     "playerID": 0
 }
+
+###
+
+GET https://localhost:25565/matchmaking/users HTTP/1.1
+content-type: application/json
+
+###
+
+GET https://localhost:25565/joder HTTP/1.1
+content-type: application/json
+
+###
+
+POST https://localhost:25565/login HTTP/1.1
+content-type: application/json
+Authorization: Bearer jaja
+
+{
+    "nick" : "HELLO STORM",
+    "password" : "b"
+}
+
+###
+
+POST https://localhost:25565/logout HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuaWNrIjoiSEVMTE8gU1RPUk0iLCJ3b3ciOiJ3b3chISEiLCJpYXQiOjE2MjExNjIwMDMsImV4cCI6MTYyMTE2MjAxM30.i1EcU2AptCZ8oIvQSSPmRWdiYIM0TqQ94Cm7BhVwzqQ
+
+###
+
+POST https://localhost:25565/token HTTP/1.1
+content-type: application/json
+
+{
+    "token" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuaWNrIjoiSEVMTE8gU1RPUk0iLCJ3b3ciOiJ3b3chISEiLCJpYXQiOjE2MjExNjE2NTR9.HEf6ByLVJt0OXDwxI1jZGRTr1Hkxm1bqNQrbmdaTtFU"
+}
+
+###
+
+GET https://localhost:25565/joder HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuaWNrIjoiSEVMTE8gU1RPUk0iLCJ3b3ciOiJ3b3chISEiLCJpYXQiOjE2MjExNjE3NjQsImV4cCI6MTYyMTE2MTc3NH0._X8MbsOr36xidb9hf2dC1_3C97LO_dKfB-q2iclWyug
