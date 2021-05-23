@@ -233,25 +233,16 @@ server.delete('/accounts', authenticateJWT, deleteAccount);
 // envía: {message: message}
 // message es para nosotros
 // (empleamos estándar de HTTP) => 200 = no hay errores, 400 = error de cliente
-async function verifyLogin(email, nick, password)
+async function verifyLogin(nick, password)
 {
   var query = {};
 
-  //siempre se prioriza el login con email
-  if(email === undefined)
-  {
-    if(nick === undefined) return {status: 400, message: "Petición inválida, no se ha enviado ningún dato"};
+  if(nick === undefined) return {status: 400, message: "Petición inválida, no se ha enviado ningún dato"};
 
-    else
-    {
-      query.nick = nick;
-      if (DEBUGLOG) console.log(`Player with nick ${nick} is trying to log in`);
-    }
-  }
   else
   {
-    query.email = email;    
-    if (DEBUGLOG) console.log(`Player with email ${email} is trying to log in`);
+    query.nick = nick;
+    if (DEBUGLOG) console.log(`Player with nick ${nick} is trying to log in`);
   }
 
   var player;
@@ -272,13 +263,12 @@ async function verifyLogin(email, nick, password)
 
 async function logIn(req, res)
 {
-  var email = req.body.email;
   var nick = req.body.nick;
   var password = req.body.password;
   
   try
   {
-    var result = await verifyLogin(email, nick, password);
+    var result = await verifyLogin(nick, password);
   }
   catch(error) {}
 
@@ -287,8 +277,8 @@ async function logIn(req, res)
   await MongoJS.logLogin(result.id);
 
   // Generate an access token
-  const accessToken = JWT.sign({ nick: nick, id: result.id, email: email }, secret, { expiresIn: authTokenExpiration });
-  const refreshToken = JWT.sign({ nick: nick, id: result.id, email: email }, refreshSecret);
+  const accessToken = JWT.sign({ nick: nick, id: result.id, email: result.email }, secret, { expiresIn: authTokenExpiration });
+  const refreshToken = JWT.sign({ nick: nick, id: result.id, email: result.email }, refreshSecret);
 
   refreshTokens.push(refreshToken);
 
