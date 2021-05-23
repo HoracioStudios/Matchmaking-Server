@@ -186,3 +186,13 @@ content-type: application/json
 GET https://localhost:25565/joder HTTP/1.1
 content-type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuaWNrIjoiSEVMTE8gU1RPUk0iLCJ3b3ciOiJ3b3chISEiLCJpYXQiOjE2MjExNjE3NjQsImV4cCI6MTYyMTE2MTc3NH0._X8MbsOr36xidb9hf2dC1_3C97LO_dKfB-q2iclWyug
+
+
+###
+
+POST http://localhost:25565/matchmaking HTTP/1.1
+content-type: application/json
+
+{
+    "id" : "0"
+}

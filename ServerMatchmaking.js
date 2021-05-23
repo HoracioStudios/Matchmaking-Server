@@ -2,7 +2,8 @@ const MongoJS = require('./modules/mongoJS.js');
 
 const DEBUGLOG = true;
 
-const DEBUG = true;
+const PROCESS_AUTHENTICATION = false;
+const HTTPS = false;
 
 const defaultParameters = {rating: 1500, RD: 350};
 
@@ -17,7 +18,7 @@ const port = 25565;
 
 const onlineUsers = [];
 
-if(DEBUG)
+if(!HTTPS)
 {
   server.listen(port, startup);
 }
@@ -47,7 +48,7 @@ var refreshTokens = [];
 
 const authenticateJWT = (req, res, next) =>
 {
-  if(DEBUG)
+  if(!PROCESS_AUTHENTICATION)
     next();
   else
   {
@@ -179,7 +180,7 @@ async function signIn(req, res)
 
   try
   {
-    if(DEBUG && req.body.rating !== undefined && req.body.RD !== undefined)
+    if(PROCESS_AUTHENTICATION && req.body.rating !== undefined && req.body.RD !== undefined)
       await MongoJS.addPlayer(ID, { rating: req.body.rating, RD: req.body.RD }, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});  
     else
       await MongoJS.addPlayer(ID, defaultParameters, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});
@@ -210,7 +211,7 @@ async function deleteAccount(req, res)
 {
   var id;
 
-  if(DEBUG) id = req.body.id;
+  if(!PROCESS_AUTHENTICATION) id = req.body.id;
   else id = req.user.id;
 
   try
@@ -281,7 +282,7 @@ async function logIn(req, res)
   }
   catch(error) {}
 
-  if(result.status !== undefined) return res.status(result.status).send(result.message);
+  if(result.status !== undefined) return res.status(result.status).send( { message: result.message } );
 
   await MongoJS.logLogin(result.id);
 
@@ -386,7 +387,7 @@ async function sendRoundInfo(req, res)
 {
   var id;
 
-  if(DEBUG) id = req.body.id;
+  if(!PROCESS_AUTHENTICATION) id = req.body.id;
   else id = req.user.id;
 
   try
@@ -412,7 +413,7 @@ server.post('/accounts/rounds', authenticateJWT, sendRoundInfo);
 // envía: {status: errorCode, onlineUsers: onlineUsers}
 server.get('/matchmaking/user-list', (req, res) => {
 
-  return res.send(onlineUsers);
+  return res.send({ onlineUsers: onlineUsers });
 });
 
 //NOTA: esto se hace por petición, el emparejamiento ocurre cada vez que se llama al servicio. Asumo que está chido así.
@@ -493,18 +494,19 @@ async function addToQueue(req, res)
 {
   var id;
 
-  if(DEBUG) id = req.body.id;
+  if(!PROCESS_AUTHENTICATION) id = req.body.id;
   else id = req.user.id;
 
   id = parseInt(id);
 
   var waitTime = req.query.waitTime;
   if(waitTime === undefined) waitTime = 0;
+  
   waitTime = parseFloat(waitTime);
 
   try
   {
-    var player = await MongoJS.findPlayerSafe(id);
+    var player = await MongoJS.findPlayerSafe({ id: id });
   }
   catch (error)
   {
@@ -525,7 +527,7 @@ async function searchPair(req, res)
 {
   var id;
 
-  if(DEBUG) id = req.query.id;
+  if(!PROCESS_AUTHENTICATION) id = req.query.id;
   else id = req.user.id;
 
   id = parseInt(id);
@@ -533,6 +535,7 @@ async function searchPair(req, res)
   var waitTime = req.query.waitTime;
 
   if(waitTime === undefined) waitTime = 0;
+
   waitTime = parseFloat(waitTime);
 
   var i = 0;
@@ -547,7 +550,7 @@ async function searchPair(req, res)
   {
     try
     {
-      onlineUsers[i].playerData = await MongoJS.findPlayerSafe(id);
+      onlineUsers[i].playerData = await MongoJS.findPlayerSafe({ id: id });
     }
     catch (error)
     {
@@ -604,7 +607,7 @@ function leaveQueue(req, res)
 {
   var id;
 
-  if(DEBUG) id = req.body.id;
+  if(!PROCESS_AUTHENTICATION) id = req.body.id;
   else id = req.user.id;
   
   var i = onlineUsers.findIndex(p => p.playerData.id == id);
@@ -634,7 +637,7 @@ server.delete('/matchmaking', authenticateJWT, leaveQueue);
 // cómo sacamos la versión? la ponemos en la base de datos?
 server.get('/version', (req, res) => {
   var version = "1.0.0";
-  return res.send(version);
+  return res.send({version: version});
 });
 
 async function startup()
