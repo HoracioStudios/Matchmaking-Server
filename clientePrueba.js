@@ -43,12 +43,22 @@ function signIn(emailUser, nickUser, passUser, points, deviation){
 }
 //console.log(JSON.stringify(dataOnline, null, 2))
 
-
-async function searchPair(index)
-{
+async function getInQueue(index){
   request.post({
-    url:     url + '/searchPair',
-    json:    { playerID : dataOnline[index].id, waitTime: 0, realIndex : index }
+    url:     url + '/matchmaking',
+    json: {id : dataOnline[index].id, waitTime: 0}
+  }, function(error, response, body){
+    if(error !== null)
+      console.log("error al meterse en la lista: " + error);
+      dataOnline[index].onQueue = true;
+  });
+}
+
+async function searchPair(index, time)
+{
+  request.get({
+    url:     url + '/matchmaking/?id=' + dataOnline[index].id + '&waitTime=' + time,
+    json:    {}
   }, function(error, response, body){
     if(error !== null)
       return;
@@ -64,10 +74,23 @@ async function searchPair(index)
   });
 }
 
+function simulateDisconnection(player){
+  var prob = Math.floor(Math.random() * (gameCounter[player.id] * 10));
+  var prob2 = Math.floor(Math.random() * 100);
+
+  if (prob >= prob2)
+    return true;
+  else
+    return false;
+}
+
 function simularJugadores()
 {
   for (let index = 0; index < dataOnline.length; index++) {
-    searchPair(index);
+    if(dataOnline[index].onQueue === undefined)
+        getInQueue(index);
+    else
+        searchPair(index, 0);
   }
 
   if(dataOnline.length > 1)
@@ -82,8 +105,17 @@ function simularJugadores()
 
       dataOnline.find(p => p.id == jugadorOnline.rival).rival = NaN;
       jugadorOnline.rival = NaN;
-      //let index = dataOnline.indexOf(jugadorOnline);
-      //dataOnline.splice(index, 1);
+
+      if(simulateDisconnection(jugadorOnline))
+      {
+        console.log("Jugador: " + jugadorOnline.id + " se ha desconectado.");
+        let index = dataOnline.indexOf(jugadorOnline);
+        dataOnline.splice(index, 1);
+        var x = Math.floor(Math.random() * 500);
+        getUserByID(x);
+        console.log("Jugador: " + x + " se ha conectado.");
+        getInQueue(index);
+      }
     });
   }
 }
@@ -109,30 +141,30 @@ function simulateGame(first, second)
 
   var firstPlayer =  dataOnline.find(p => p.id == first);
   var secondPlayer =  dataOnline.find(p => p.id == second);
-  /*request.post({
-    url:      url + '/leaveQueue', 
-    json:     { playerID : first }
+  request.delete({
+    url:      url + '/matchmaking', 
+    json:     { id : first }
     }, function(error, response, body){
       if(error !== null)
           console.log("HAY ERROR: " + error);
       //console.log(body);
   });
 
-  request.post({
-    url:      url + '/leaveQueue', 
-    json:     { playerID : second }
+  request.delete({
+    url:      url + '/matchmaking', 
+    json:     { id : second }
     }, function(error, response, body){
       if(error !== null)
           console.log("HAY ERROR: " + error);
       //console.log(body);
-  });*/
+  });
 
   for (let i = 0; i < 3; i++)
   {
     var resultado = generateRound(firstPlayer, secondPlayer);
     request.post({
-      url:      url + '/sendRoundInfo', 
-      json:     { playerID : first, results: [ {result: resultado[0], time: resultado[2], opponent: second} ] }
+      url:      url + '/accounts/rounds', 
+      json:     { id : first, results: [ {result: resultado[0], time: resultado[2], opponent: second} ] }
       }, function(error, response, body){
         if(error !== null)
           console.log("HAY ERROR: " + error);
@@ -140,8 +172,8 @@ function simulateGame(first, second)
     });
 
     request.post({
-      url:      url + '/sendRoundInfo', 
-      json:     { playerID : second, results: [ {result: resultado[1], time: resultado[2], opponent: first} ] }
+      url:      url + '/accounts/rounds', 
+      json:     { id : second, results: [ {result: resultado[1], time: resultado[2], opponent: first} ] }
       }, function(error, response, body){
         if(error !== null)
           console.log("HAY ERROR: " + error);
@@ -163,10 +195,17 @@ let dataOnline = [];
 
 function getUserByID(id){
   request.get({
-    url:    url + '/petition/getInfo/?playerID=' + id,
+    url:    url + '/accounts/by-id/' + id,
     json: {}
   }, function (error, response, body){
-    dataOnline.push(body.data);
+    if(error !== null)
+    {
+      console.log("Error al pillar jugador: " + error);
+      return;
+    }
+
+    dataOnline.push(body);
+    //console.log(dataOnline);
   });
 }
 
@@ -176,6 +215,7 @@ for (let i = 0; i < 10; i++)
   getUserByID(x);
 }
 
-//let dataOnline = getRandom(dataFile, 10);
-//simularJugadores();
+/*for (let index = 0; index < dataOnline.length; index++) {
+  getInQueue(index);
+}*/
 setInterval(simularJugadores, 2000);

@@ -2,7 +2,7 @@ const MongoJS = require('./modules/mongoJS.js');
 
 const DEBUGLOG = true;
 
-const DEBUG = false;
+const DEBUG = true;
 
 const defaultParameters = {rating: 1500, RD: 350};
 
@@ -496,9 +496,11 @@ async function addToQueue(req, res)
   if(DEBUG) id = req.body.id;
   else id = req.user.id;
 
+  id = parseInt(id);
+
   var waitTime = req.query.waitTime;
   if(waitTime === undefined) waitTime = 0;
-  else if(waitTime === "") waitTime = Number(waitTime);
+  waitTime = parseFloat(waitTime);
 
   try
   {
@@ -526,10 +528,12 @@ async function searchPair(req, res)
   if(DEBUG) id = req.query.id;
   else id = req.user.id;
 
+  id = parseInt(id);
+  
   var waitTime = req.query.waitTime;
 
   if(waitTime === undefined) waitTime = 0;
-  else if(waitTime === "") waitTime = Number(waitTime);
+  waitTime = parseFloat(waitTime);
 
   var i = 0;
 
