@@ -6,6 +6,9 @@ var poggerinos = "";
 
 var defaultLogin = {nick: "test", password: "test"};
 
+var gameCounter = [];
+var timeCounter = [];
+
 const Glicko = require('./modules/Glicko.js');
 let dataFile = require('./Bots.json');
 let users = require ('./UserInfo.json');
@@ -50,7 +53,8 @@ async function getInQueue(index){
   }, function(error, response, body){
     if(error !== null)
       console.log("error al meterse en la lista: " + error);
-      dataOnline[index].onQueue = true;
+      if(dataOnline[index] !== undefined)
+        dataOnline[index].onQueue = true;
   });
 }
 
@@ -69,8 +73,11 @@ async function searchPair(index, time)
       return;
     if(!body.finished)
       return;
-
-    dataOnline[index].rival = body.rivalID;
+    if(dataOnline[index] !== undefined)
+    {
+      dataOnline[index].rival = body.rivalID;
+      timeCounter[dataOnline[index].id] = 0;
+    }
   });
 }
 
@@ -87,35 +94,39 @@ function simulateDisconnection(player){
 function simularJugadores()
 {
   for (let index = 0; index < dataOnline.length; index++) {
-    if(dataOnline[index].onQueue === undefined)
+    if(dataOnline[index] !== undefined && dataOnline[index].onQueue === undefined)
         getInQueue(index);
     else
-        searchPair(index, 0);
+        searchPair(index, timeCounter[dataOnline[index].id]);
   }
 
   if(dataOnline.length > 1)
   {
     dataOnline.forEach(jugadorOnline => {
-      if(!jugadorOnline.rival || jugadorOnline.rival == NaN) return;
+      if(!jugadorOnline.rival || isNaN(jugadorOnline.rival)) return;
 
       if(dataOnline.find(p => p.id == jugadorOnline.rival)) 
       {
         simulateGame(jugadorOnline.id, jugadorOnline.rival);
       }
 
-      dataOnline.find(p => p.id == jugadorOnline.rival).rival = NaN;
-      jugadorOnline.rival = NaN;
-
       if(simulateDisconnection(jugadorOnline))
       {
         console.log("Jugador: " + jugadorOnline.id + " se ha desconectado.");
         let index = dataOnline.indexOf(jugadorOnline);
+        disconnect(dataOnline[index].id);
         dataOnline.splice(index, 1);
         var x = Math.floor(Math.random() * 500);
         getUserByID(x);
         console.log("Jugador: " + x + " se ha conectado.");
-        getInQueue(index);
+      } else {
+        jugadorOnline.onQueue = undefined;
+        if (dataOnline.find(p => p.id == jugadorOnline.rival) !== undefined)
+            dataOnline.find(p => p.id == jugadorOnline.rival).onQueue = undefined;
       }
+      if (dataOnline.find(p => p.id == jugadorOnline.rival) !== undefined)
+        dataOnline.find(p => p.id == jugadorOnline.rival).rival = NaN;
+      jugadorOnline.rival = NaN;
     });
   }
 }
@@ -136,28 +147,20 @@ function generateRound(user1, user2){
   return results;
 }
 
+function disconnect(index){
+  request.delete({
+    url:      url + '/matchmaking', 
+    json:     { id : index }
+    }, function(error, response, body){
+      if(error !== null)
+          console.log("HAY ERROR: " + error);
+  });
+}
 function simulateGame(first, second)
 {
 
   var firstPlayer =  dataOnline.find(p => p.id == first);
   var secondPlayer =  dataOnline.find(p => p.id == second);
-  request.delete({
-    url:      url + '/matchmaking', 
-    json:     { id : first }
-    }, function(error, response, body){
-      if(error !== null)
-          console.log("HAY ERROR: " + error);
-      //console.log(body);
-  });
-
-  request.delete({
-    url:      url + '/matchmaking', 
-    json:     { id : second }
-    }, function(error, response, body){
-      if(error !== null)
-          console.log("HAY ERROR: " + error);
-      //console.log(body);
-  });
 
   for (let i = 0; i < 3; i++)
   {
@@ -180,11 +183,28 @@ function simulateGame(first, second)
         //console.log(body);
     });
   }
+  checkCounter(first);
+  checkCounter(second);
 
   console.log("/////////////////////////////////////////");
-  console.log("id: " + first + " points:" + firstPlayer.rating + " RD: " + firstPlayer.RD);
-  console.log("id: " + second + " points:" + secondPlayer.rating + " RD: " + secondPlayer.RD);
+  console.log("id: " + first + " points:" + firstPlayer.rating + " RD: " + firstPlayer.RD + "Wait Time: " + timeCounter[first]);
+  console.log("id: " + second + " points:" + secondPlayer.rating + " RD: " + secondPlayer.RD + "Wait Time: " + timeCounter[second]);
   console.log("/////////////////////////////////////////");
+}
+
+function checkCounter(index){
+  if(gameCounter[index] === undefined)
+  gameCounter[index] = 1;
+  else   gameCounter[index]++;
+}
+
+function updateTimeCounter(){
+  for (let index = 0; index < dataOnline.length; index++)
+  {
+    if(dataOnline[index].onQueue !== undefined){
+      timeCounter[dataOnline[index].id]++;
+    }
+  }
 }
 
 //for (let i = 0; i < Object.keys(users).length; i++){
@@ -209,6 +229,11 @@ function getUserByID(id){
   });
 }
 
+for (let i = 0; i < 500; i++)
+{
+  timeCounter[i] = 0;
+}
+
 for (let i = 0; i < 10; i++)
 {
   var x = Math.floor(Math.random() * 500);
@@ -219,3 +244,4 @@ for (let i = 0; i < 10; i++)
   getInQueue(index);
 }*/
 setInterval(simularJugadores, 2000);
+setInterval(updateTimeCounter, 1000);
