@@ -2,7 +2,7 @@ const MongoJS = require('./modules/mongoJS.js');
 
 const DEBUGLOG = true;
 
-const PROCESS_AUTHENTICATION = true;
+const PROCESS_AUTHENTICATION = false;
 const HTTPS = false;
 
 const defaultParameters = {rating: 1500, RD: 350};
