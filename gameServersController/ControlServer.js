@@ -1,6 +1,6 @@
 const MAX_GAMES = 20;
 const THIS_SERVER_PORT = 25564;
-const BASE_PORT = 25565;
+const BASE_PORT = 25566;
 var actualPort = 0;
 
 const execFile = require('child_process').execFile;
@@ -20,7 +20,7 @@ var currentGames = 0; // Count with current games
 function startNewServer(){
   actualPort = freePorts.shift();
   currentGames++;
-  execFile('Server.exe', ['-port', actualPort], function(err, data) {  //SERVER.EXE ES EL EJECUTABLE DEL SERVIDOR, NECESARIO PARA EJECUTAR ESTE JS
+  execFile('Server.exe', ['-port', actualPort], function(err, data) {  
       console.log(err)
       console.log(data.toString()); 
   });
@@ -52,16 +52,16 @@ async function startNewGame(req, res)
   
   while(semaforo) await sleep(5);
   
-  semaforo = true;  
+  semaforo = true;
 
-  var ID1 = req.query.ID1;
+  var ID1 = req.body.ID1;
   if(games.has(ID1)){
     console.log(`Game Already Exists`);
     var r = games.get(ID1);
     semaforo = false;
     return res.send({port:r.port, matchID:r.matchID}); 
   }
-  var ID2 = req.query.ID2;
+  var ID2 = req.body.ID2;
   console.log(`New Game`);
 
   var port = actualPort;
@@ -72,7 +72,7 @@ async function startNewGame(req, res)
 
   return res.send({port:port, matchID:matchID});
 }
-server.get('/gameServer/newGame', startNewGame);
+server.post('/game-instances', startNewGame);
 
 async function finishGame(req, res)
 {
@@ -81,14 +81,14 @@ async function finishGame(req, res)
   semaforo = true;  
   var deletedOneGame = false;
 
-  var ID1 = req.query.ID1;
+  var ID1 = req.body.ID1;
   if(games.has(ID1)){
     freePorts.push(games.get(ID1).port);
     games.delete(ID1);
     deletedOneGame = true;
   }
 
-  var ID2 = req.query.ID2;
+  var ID2 = req.body.ID2;
   if(games.has(ID2)){
     games.delete(ID2);
     deletedOneGame = true;
@@ -101,7 +101,7 @@ async function finishGame(req, res)
 
   return res.send({status:true});
 }
-server.get('/gameServer/finishGame', finishGame);
+server.delete('/game-instances', finishGame);
 
 async function getCurrentGames(req, res)
 {
@@ -109,7 +109,7 @@ async function getCurrentGames(req, res)
   console.log(games);
   return res.send({games:currentGames});
 }
-server.get('/gameServer/currentGames', getCurrentGames);
+server.get('/game-instances', getCurrentGames);
 
 function getTest(req, res)
 {
