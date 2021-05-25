@@ -2,7 +2,7 @@ const MongoJS = require('./modules/mongoJS.js');
 
 const DEBUGLOG = true;
 
-const PROCESS_AUTHENTICATION = false;
+const PROCESS_AUTHENTICATION = true;
 const HTTPS = false;
 
 const defaultParameters = {rating: 1500, RD: 350};
@@ -116,7 +116,7 @@ server.post('/test', postTest)
 /////////////////////////////////////////////
 
 // Comprobar si un nick o email está libre
-//"/available/?nick=x&email=x"
+//"/accounts/check-availability/?nick=x&email=x"
 // nos aseguramos en el juego que el nick/email sea válido
 // envía: {message: message, emailAvailable: bool, nickAvailable: bool}
 async function availability(req, res)
@@ -166,8 +166,7 @@ async function signIn(req, res)
 {
   var nick = req.body.nick;
   var email = req.body.email;
-  var password = req.body.password;
-  
+  var password = req.body.password;  
   
   if(nick === undefined || email === undefined || password === undefined) 
   return res.status(400).send({message: "Petición inválida, no se ha enviado ningún dato o faltan datos"});
@@ -320,7 +319,7 @@ async function refreshSession(req, res)
       const accessToken = JWT.sign({ nick: user.nick, id: user.id, email: user.email }, secret, { expiresIn: authTokenExpiration });
 
       res.json({
-          accessToken
+          accessToken : accessToken
       });
   });
 }
@@ -587,7 +586,7 @@ async function searchPair(req, res)
 
   onlineUsers[bestRivalIndex].found = onlineUsers[i].playerData;
 
-  return res.send({ found: true, finished: onlineUsers[i].found, rivalID: bestRival.id, rivalNick: bestRival.nick });
+  return res.send({ found: true, finished: (onlineUsers[i].found !== undefined), rivalID: bestRival.id, rivalNick: bestRival.nick });
 }
 server.get('/matchmaking', authenticateJWT, searchPair);
 
