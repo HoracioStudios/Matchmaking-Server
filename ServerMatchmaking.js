@@ -9,6 +9,7 @@ const defaultParameters = {rating: 1500, RD: 350};
 
 //NOTA: poner esto a lo que pongamos de espera en la búsqueda
 const ttlMilliseconds = 600000;
+//const ttlMilliseconds = 5000;
 
 //import express from 'express';
 const Express = require('express');
@@ -407,7 +408,7 @@ server.get('/matchmaking/user-list', (req, res) => {
 
 //NOTA: esto se hace por petición, el emparejamiento ocurre cada vez que se llama al servicio. Asumo que está chido así.
 
-function timeToLiveCleanup(onlineUserList)
+function timeToLiveCleanup(onlineUserList, i)
 {
   var toDelete = [];
 
@@ -425,7 +426,9 @@ function timeToLiveCleanup(onlineUserList)
   
   toDelete.forEach(index => {
     onlineUserList.splice(index + spliceOffset, 1);
-    spliceOffset--;
+
+    if(i >= index)
+      spliceOffset--;
   });
 
   return spliceOffset;
@@ -444,7 +447,16 @@ function makeTheMatch(user, onlineUserList)
     const rivalData = onlineUserList[r].playerData;
 
     if(rivalData.id == userData.id) continue;
-    if(rivalData.found) continue;
+    if(onlineUserList[r].found)
+    {
+      if(onlineUserList[r].found.id != userData.id)
+        continue;
+      else
+      {
+        bestRival = rivalData;
+        break;
+      }
+    }
 
     var minRival = rivalData.rating - (rivalData.RD + (waitSecsToRD * onlineUserList[r].waitTime));
     var maxRival = rivalData.rating + (rivalData.RD + (waitSecsToRD * onlineUserList[r].waitTime));
@@ -551,7 +563,9 @@ async function searchPair(req, res)
 
   //console.log(onlineUsers);
 
-  i += timeToLiveCleanup(onlineUsers);
+  i += timeToLiveCleanup(onlineUsers, i);
+
+  if(i < 0) return res.status(404).send({ message: "Este usuario no está en la lista" });
 
   //console.log(onlineUsers);
 
@@ -568,7 +582,7 @@ async function searchPair(req, res)
       pog++;
     }
 
-    if(index > -1 && onlineUsers[index].playerData.id == onlineUsers[i].found.id)
+    if(index > -1 && onlineUsers[index].playerData.id == onlineUsers[i].found.id && (!onlineUsers[index].found || onlineUsers[index].found.id == onlineUsers[i].playerData.id))
     {
       bestRival = {};
       bestRival = onlineUsers[i].found;
@@ -585,8 +599,11 @@ async function searchPair(req, res)
   var bestRivalIndex = onlineUsers.findIndex(p => p.playerData.id == bestRival.id);
 
   onlineUsers[bestRivalIndex].found = onlineUsers[i].playerData;
+  onlineUsers[i].found = onlineUsers[bestRivalIndex].playerData;
 
-  return res.send({ found: true, finished: (onlineUsers[i].found !== undefined && (typeof onlineUsers[i].found) != "boolean"), rivalID: bestRival.id, rivalNick: bestRival.nick });
+  onlineUsers[bestRivalIndex].mutual = true;
+
+  return res.send({ found: true, finished: (onlineUsers[i].mutual !== undefined && onlineUsers[i].mutual), rivalID: bestRival.id, rivalNick: bestRival.nick });
 }
 server.get('/matchmaking', authenticateJWT, searchPair);
 
