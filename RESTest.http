@@ -190,10 +190,76 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuaWNrIjoiSEVMTE8gU
 
 ###
 
-POST http://localhost:25565/accounts/rounds HTTP/1.1
+GET http://localhost:25565/matchmaking/user-list HTTP/1.1
+content-type: application/json
+
+###
+
+POST http://localhost:25565/matchmaking HTTP/1.1
 content-type: application/json
 
 {
-    "id" : "0",
-    "results" : ""
+    "id" : "0"
 }
+
+###
+
+POST http://localhost:25565/matchmaking HTTP/1.1
+content-type: application/json
+
+{
+    "id" : "1"
+}
+
+###
+
+POST http://localhost:25565/matchmaking HTTP/1.1
+content-type: application/json
+
+{
+    "id" : "2"
+}
+
+###
+
+GET http://localhost:25565/matchmaking?id=0 HTTP/1.1
+content-type: application/json
+
+###
+
+GET http://localhost:25565/matchmaking?id=1 HTTP/1.1
+content-type: application/json
+
+###
+
+GET http://localhost:25565/matchmaking?id=2 HTTP/1.1
+content-type: application/json
+
+###
+
+DELETE http://localhost:25565/matchmaking HTTP/1.1
+content-type: application/json
+
+{
+    "id" : "0"
+}
+
+###
+
+DELETE http://localhost:25565/matchmaking HTTP/1.1
+content-type: application/json
+
+{
+    "id" : "1"
+}
+
+###
+
+DELETE http://localhost:25565/matchmaking HTTP/1.1
+content-type: application/json
+
+{
+    "id" : "2"
+}
+
+###
