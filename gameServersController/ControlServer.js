@@ -1,4 +1,4 @@
-const MAX_GAMES = 20;
+const MAX_GAMES = 5;
 const THIS_SERVER_PORT = 25564;
 const BASE_PORT = 25566;
 var actualPort = 0;
@@ -38,8 +38,8 @@ function createMatchID(id1, id2, port){
   var time = Date.now();
   var matchID = sha256(time.toString() + min.toString() + max.toString());
 
-  games.set(min.toString(), {matchID:matchID, port:port});
-  games.set(max.toString(), {matchID:matchID, port:port});
+  games.set(min, {matchID:matchID, port:port});
+  games.set(max, {matchID:matchID, port:port});
 
   return matchID;
 }
@@ -55,14 +55,14 @@ async function startNewGame(req, res)
   semaforo = true;
 
   var ID1 = req.body.ID1;
+  var ID2 = req.body.ID2;
   if(games.has(ID1)){
-    console.log(`Game Already Exists`);
+    console.log(`Game Already Exists: ` + ID1 + ' ID2: ' + ID2);
     var r = games.get(ID1);
     semaforo = false;
     return res.send({port:r.port, matchID:r.matchID}); 
   }
-  var ID2 = req.body.ID2;
-  console.log(`New Game`);
+  console.log(`New Game ID1: ` + ID1 + ' ID2: ' + ID2);
 
   var port = actualPort;
   startNewServer();

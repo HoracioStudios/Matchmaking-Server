@@ -2,7 +2,7 @@ const MongoJS = require('./modules/mongoJS.js');
 
 const DEBUGLOG = true;
 
-const PROCESS_AUTHENTICATION = false;
+const PROCESS_AUTHENTICATION = true;
 const HTTPS = false;
 
 const defaultParameters = {rating: 1500, RD: 350};
@@ -537,7 +537,7 @@ async function searchPair(req, res)
 
   if(waitTime === undefined) waitTime = 0;
 
-  waitTime = parseFloat(waitTime);
+  waitTime = parseFloat(waitTime.replace(/,/, '.'));
 
   var i = 0;
 
