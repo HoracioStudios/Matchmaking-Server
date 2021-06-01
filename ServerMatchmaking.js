@@ -1,20 +1,25 @@
-const MongoJS = require('./modules/mongoJS.js');
+const MongoJS = require("./MongoJS/mongoJS.js");
+var fs = require('fs');
 
 const DEBUGLOG = true;
 
 const PROCESS_AUTHENTICATION = true;
 const HTTPS = false;
 
-const defaultParameters = {rating: 1500, RD: 350};
+const USE_CUSTOM_URI = false;
+const URI_PATH = './sensitive/uri.uri';
+
+const defaultParameters = { rating: 1500, RD: 350 };
 
 //NOTA: poner esto a lo que pongamos de espera en la búsqueda
-const ttlMilliseconds = 600000;
-//const ttlMilliseconds = 5000;
+//const ttlMilliseconds = 600000;
+const ttlMilliseconds = 5000;
 
 //import express from 'express';
 const Express = require('express');
 const server = Express();
 server.use(Express.json())
+
 const port = 25565;
 
 const onlineUsers = [];
@@ -26,12 +31,11 @@ if(!HTTPS)
 else
 {
   //archivo index.js
-  var fs = require('fs');
   var https = require('https');
   
   https.createServer({
-     cert: fs.readFileSync('certificate.crt'),
-     key: fs.readFileSync('privateKey.key')
+     cert: fs.readFileSync('./sensitive/certificate.crt'),
+     key: fs.readFileSync('./sensitive/privateKey.key')
    }, server).listen(port, startup);
 }
 
@@ -650,11 +654,20 @@ async function startup()
 {
   console.log(`Server is running on port ${port}`);
 
+  if(USE_CUSTOM_URI)
+  {
+    try {
+      var uri = fs.readFileSync(URI_PATH, 'utf8');
+      MongoJS.init(uri);
+    } catch (error)
+    {    
+      console.log(error);
+    }
+  }
+
   try
   {
     ID = await MongoJS.getUserCount();
-
-    //console.log(ID);
   }
   catch (error)
   {
