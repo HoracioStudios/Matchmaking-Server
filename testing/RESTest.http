@@ -9,12 +9,14 @@ content-type: application/json
 
 ###
 
-POST https://localhost:25565/accounts/sessions HTTP/1.1
+POST http://localhost:25565/accounts/rounds HTTP/1.1
 content-type: application/json
 
 {
-    "email": "email@email.email",
-    "password": "pass"
+    "id": "0",
+    "results": {
+        "lmao" : "lmao"
+        }
 }
 
 ###

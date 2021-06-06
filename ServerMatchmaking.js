@@ -1,12 +1,16 @@
 const MongoJS = require("./MongoJS/mongoJS.js");
+
+const Redefinitions = require("./redefinitions.js");
+MongoJS.playerDataProcessing = Redefinitions.playerDataProcessing;
+
 var fs = require('fs');
 
 const DEBUGLOG = true;
 
-const PROCESS_AUTHENTICATION = true;
+const PROCESS_AUTHENTICATION = false;
 const HTTPS = false;
 
-const USE_CUSTOM_URI = false;
+const USE_CUSTOM_URI = true;
 const URI_PATH = './sensitive/uri.uri';
 
 const defaultParameters = { rating: 1500, RD: 350 };
