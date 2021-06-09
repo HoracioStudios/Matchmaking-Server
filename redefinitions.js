@@ -44,6 +44,7 @@ async function playerDataProcessing (playerID, gameResult, database, playerColle
     update.$inc["characterInfo." + playerChar + ".totalDmg"] = gameResult.dmgDealt;
     update.$inc["characterInfo." + playerChar + "." + rivalChar + ".totalGames"] = 1;
     update.$inc["characterInfo." + playerChar + "." + rivalChar + ".wins"] = win;
+    
     var collection = database.collection(playerCollection);
 
     var result = await collection.updateOne(filter, update, options);

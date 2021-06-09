@@ -611,7 +611,7 @@ async function searchPair(req, res)
 
   onlineUsers[bestRivalIndex].mutual = true;
 
-  return res.send({ found: true, finished: (onlineUsers[i].mutual !== undefined && onlineUsers[i].mutual), rivalID: bestRival.id, rivalNick: bestRival.nick });
+  return res.send({ found: true, finished: (onlineUsers[i].mutual !== undefined && onlineUsers[i].mutual), rivalID: bestRival.id, rivalNick: bestRival.nick, bestRivalRating: bestRival.rating, bestRivalRD: bestRival.RD, myRating: onlineUsers[i].playerData.rating, myRD: onlineUsers[i].playerData.RD });
 }
 server.get('/matchmaking', authenticateJWT, searchPair);
 
