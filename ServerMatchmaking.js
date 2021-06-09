@@ -7,7 +7,7 @@ var fs = require('fs');
 
 const DEBUGLOG = true;
 
-const PROCESS_AUTHENTICATION = false;
+const PROCESS_AUTHENTICATION = true;
 const HTTPS = false;
 
 const USE_CUSTOM_URI = true;
