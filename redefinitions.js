@@ -1,4 +1,4 @@
-async function playerDataProcessing (playerID, gameResult, playerCollection, dataCollection)
+async function playerDataProcessing (playerID, gameResult, database, playerCollection, dataCollection)
 {
   try
   {
@@ -44,8 +44,9 @@ async function playerDataProcessing (playerID, gameResult, playerCollection, dat
     update.$inc["characterInfo." + playerChar + ".totalDmg"] = gameResult.dmgDealt;
     update.$inc["characterInfo." + playerChar + "." + rivalChar + ".totalGames"] = 1;
     update.$inc["characterInfo." + playerChar + "." + rivalChar + ".wins"] = win;
+    var collection = database.collection(playerCollection);
 
-    var result = await playerCollection.updateOne(filter, update, options);
+    var result = await collection.updateOne(filter, update, options);
 
     update = { $inc: {} };
 
@@ -59,7 +60,9 @@ async function playerDataProcessing (playerID, gameResult, playerCollection, dat
     update.$inc["characterInfo." + playerChar + "." + rivalChar + ".totalGames"] = 1;
     update.$inc["characterInfo." + playerChar + "." + rivalChar + ".wins"] = win;
 
-    var result = await dataCollection.updateOne({}, update, options);
+    var collection = database.collection(dataCollection);
+
+    var result = await collection.updateOne({}, update, options);
 
     return result;
   }
