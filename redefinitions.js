@@ -1,5 +1,7 @@
 async function playerDataProcessing (playerID, gameResult, playerCollection, dataCollection)
 {
+  try
+  {
     var win, loss, draw;
     win = loss = draw = 0;
 
@@ -60,6 +62,13 @@ async function playerDataProcessing (playerID, gameResult, playerCollection, dat
     var result = await dataCollection.updateOne({}, update, options);
 
     return result;
+  }
+  catch(error)
+  {
+    console.log(error);
+  }
+
+  return undefined;
 }
 
 module.exports = { 
