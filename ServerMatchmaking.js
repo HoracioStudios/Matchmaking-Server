@@ -1,17 +1,49 @@
-const MongoJS = require("./MongoJS/mongoJS.js");
 
-const Redefinitions = require("./redefinitions.js");
-MongoJS.playerDataProcessing = Redefinitions.playerDataProcessing;
+/*
+  variables que controlan si se desea emplear una función de procesado de información al subir una partida a la base de datos.
+*/
+const USE_REDEFINITION = true;
+const REDEFINITIONS_PATH = "./redefinitions.js";
 
-var fs = require('fs');
-
+/*
+  controla si se desea recibir mensajes por consola de diversos logs por el archivo
+*/
 const DEBUGLOG = true;
 
+/*
+  variables que controlan si se desea emplear el sistema de autorización por tokens. En caso de no emplearse se deberá proporcionar información manualmente en muchos servicios
+*/
 const PROCESS_AUTHENTICATION = true;
-const HTTPS = false;
 
+/*
+  variables que controlan si se desea emplear HTTPS, y las rutas a los archivos de certificado y key
+*/
+const HTTPS = false;
+const CERTIFICATE_PATH = './sensitive/certificate.crt';
+const PRIVATE_KEY_PATH = './sensitive/privateKey.key';
+
+
+/*
+  variables que controlan si se desea emplear una URI distinta de la defecto (localhost:27017) para conectarse a la base de datos
+*/
 const USE_CUSTOM_URI = true;
 const URI_PATH = './sensitive/uri.uri';
+
+
+const MongoJS = require("./MongoJS/mongoJS.js");
+
+if(USE_REDEFINITION)
+{
+
+  try {
+    const Redefinitions = require(REDEFINITIONS_PATH);
+    MongoJS.playerDataProcessing = Redefinitions.playerDataProcessing;
+  }
+  catch(error) { console.log("\nERROR: El archivo \'" + REDEFINITIONS_PATH + "\' no existe, o no está definida la función a redefinir. Ignora esto si no vas a querer emplear esta feature\n"); }
+}
+
+
+var fs = require('fs');
 
 const defaultParameters = { rating: 1500, RD: 350 };
 
@@ -38,8 +70,8 @@ else
   var https = require('https');
   
   https.createServer({
-     cert: fs.readFileSync('./sensitive/certificate.crt'),
-     key: fs.readFileSync('./sensitive/privateKey.key')
+     cert: fs.readFileSync(CERTIFICATE_PATH),
+     key: fs.readFileSync(PRIVATE_KEY_PATH)
    }, server).listen(port, startup);
 }
 
@@ -665,7 +697,7 @@ async function startup()
       MongoJS.init(uri);
     } catch (error)
     {    
-      console.log(error);
+      console.log("\nERROR: No se ha encontrado el archivo \'" + URI_PATH + "\', se empleará la conexión por defecto a la base de datos\n");
     }
   }
 
