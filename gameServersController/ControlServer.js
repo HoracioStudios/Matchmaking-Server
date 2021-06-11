@@ -19,7 +19,6 @@ var currentGames = 0; // Count with current games
 
 function startNewServer(){
   actualPort = freePorts.shift();
-  currentGames++;
   execFile('Server.exe', ['-port', actualPort], function(err, data) {  
       console.log(err)
       console.log(data.toString()); 
@@ -48,18 +47,22 @@ var semaforo = false;
 
 async function startNewGame(req, res)
 {  
-  while(!freePorts.length) await sleep(500); //Espera hasta que haya un puerto libre
-  
   while(semaforo) await sleep(5);
-  
+
   semaforo = true;
+
+  if(currentGames == MAX_GAMES){ //Envio de error por que el servidor esta lleno
+    semaforo = false;
+    return res.sendStatus(503);
+  }
 
   var ID1 = req.body.ID1;
   var ID2 = req.body.ID2;
   if(games.has(ID1)){
-    console.log(`Game Already Exists: ` + ID1 + ' ID2: ' + ID2);
     var r = games.get(ID1);
+    console.log(`Game Already Exists: ` + ID1 + ' ID2: ' + ID2 + 'port: ' + r.port);
     semaforo = false;
+    currentGames++;
     return res.send({port:r.port, matchID:r.matchID}); 
   }
   console.log(`New Game ID1: ` + ID1 + ' ID2: ' + ID2);
@@ -90,10 +93,11 @@ async function finishGame(req, res)
 
   var ID2 = req.body.ID2;
   if(games.has(ID2)){
+    freePorts.push(games.get(ID2).port);
     games.delete(ID2);
     deletedOneGame = true;
   }
-
+  console.log(`Game Finish ID1: ` + ID1 + ' ID2: ' + ID2);
   if(deletedOneGame)
     currentGames--;
 
