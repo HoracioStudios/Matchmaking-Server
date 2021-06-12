@@ -32,10 +32,14 @@ const URI_PATH = './sensitive/uri.uri';
 
 const MongoJS = require("./MongoJS/mongoJS.js");
 
+/*
+  version
+*/
+const versionCheck = '1.0.1';
+
 
 if(USE_REDEFINITION)
 {
-
   try {
     const Redefinitions = require(REDEFINITIONS_PATH);
     MongoJS.playerDataProcessing = Redefinitions.playerDataProcessing;
@@ -50,7 +54,7 @@ const defaultParameters = { rating: 1500, RD: 350 };
 
 //NOTA: poner esto a lo que pongamos de espera en la búsqueda
 //const ttlMilliseconds = 600000;
-const ttlMilliseconds = 5000;
+const ttlMilliseconds = 30000;
 
 //import express from 'express';
 const Express = require('express');
@@ -80,6 +84,7 @@ else
 const authTokenExpiration = '5m';
 
 const JWT = require('jsonwebtoken');
+const { versions } = require("process");
 
 const secret = "poggers";
 const refreshSecret = "poggerinos";
@@ -306,6 +311,11 @@ async function logIn(req, res)
 {
   var nick = req.body.nick;
   var password = req.body.password;
+  var version = req.body.version;
+
+  if(version === undefined || version != versionCheck){
+    return res.status(426).send( { message: 'Version equivocada. Actualiza el juego' } );
+  }
   
   try
   {
@@ -451,6 +461,7 @@ server.get('/matchmaking/user-list', (req, res) => {
 
 function timeToLiveCleanup(onlineUserList, i)
 {
+
   var toDelete = [];
 
   var now = Date.now();
@@ -464,13 +475,22 @@ function timeToLiveCleanup(onlineUserList, i)
   //console.log(toDelete);
 
   var spliceOffset = 0;
+  var aux = "";
   
   toDelete.forEach(index => {
+
+    aux += onlineUserList[index].playerData.nick + " - ";
+
     onlineUserList.splice(index + spliceOffset, 1);
 
     if(i >= index)
       spliceOffset--;
   });
+
+  if(toDelete.length > 0) 
+  {
+    console.log("CLEANUP :" + aux);
+  }
 
   return spliceOffset;
 }
@@ -563,6 +583,8 @@ async function addToQueue(req, res)
 }
 server.post('/matchmaking', authenticateJWT, addToQueue);
 
+var waitSearchPair = false;
+
 //proceso matchmaking
 //IMPORTANTE: DEBE SEGUIR HACIÉNDOSE HASTA QUE AMBOS ESTÉN EN LA SALA. POR SI SE DESCONECTA EL OPONENTE.
 async function searchPair(req, res)
@@ -573,6 +595,10 @@ async function searchPair(req, res)
   else id = req.user.id;
 
   id = parseInt(id);
+  
+  while(waitSearchPair) await sleep(5);
+  
+  waitSearchPair = true;
   
   var waitTime = req.query.waitTime;
 
@@ -586,6 +612,7 @@ async function searchPair(req, res)
 
   if(i < 0)
   {
+    waitSearchPair = false;
     return res.status(404).send({ message: "Este usuario no está en la lista" });
   }
   else
@@ -596,19 +623,30 @@ async function searchPair(req, res)
     }
     catch (error)
     {
+      waitSearchPair = false;
       return res.status(502).send({message: "Base de datos no acepta conexión"});
     }
-    onlineUsers[i].waitTime = waitTime;
-    onlineUsers[i].lastCheck = Date.now();
+
+    if(onlineUsers[i] === undefined)
+    {
+      console.log(i + " BUT REAL SIZE IS " + onlineUsers.length);
+      console.log("id was " + id);
+      
+      waitSearchPair = false;
+      return res.status(404).send({ message: "Este error es un poco turbio, prueba a reiniciar el juego y manda al canal de errores" });
+    }
+    else
+    {
+      onlineUsers[i].waitTime = waitTime;
+      onlineUsers[i].lastCheck = Date.now();
+    }
   }
 
-  //console.log(onlineUsers);
-
   i += timeToLiveCleanup(onlineUsers, i);
+  
+  waitSearchPair = false;
 
   if(i < 0) return res.status(404).send({ message: "Este usuario no está en la lista" });
-
-  //console.log(onlineUsers);
 
   var bestRival = undefined;
 
@@ -635,7 +673,7 @@ async function searchPair(req, res)
     }
   }
 
-  if(bestRival === undefined) return res.send({ found: false });
+  if(bestRival === undefined || bestRival.id == onlineUsers[i].playerData.id) return res.send({ found: false });
 
   var bestRivalIndex = onlineUsers.findIndex(p => p.playerData.id == bestRival.id);
 

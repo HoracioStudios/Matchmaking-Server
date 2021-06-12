@@ -1,4 +1,4 @@
-const MAX_GAMES = 2;
+const MAX_GAMES = 25;
 const THIS_SERVER_PORT = 25564;
 const BASE_PORT = 25566;
 var actualPort = 0;
@@ -12,15 +12,15 @@ server.use(Express.json())
 
 const freePorts = new Array();
 const games = new Map();
+var currentPID;
 
 init();
-startNewServer();
+currentPID = startNewServer();
 var currentGames = 0; // Count with current games
 
 function startNewServer(){
   actualPort = freePorts.shift();
-  execFile('Server.exe', ['-port', actualPort], function(err, data) {  
-      console.log(err)
+  return execFile('Server.exe', ['-port', actualPort], function(err, data) {  
       console.log(data.toString()); 
   });
 }
@@ -31,16 +31,20 @@ function init(){
   }
 }
 
-function createMatchID(id1, id2, port){
-  var min = Math.min(id1, id2);
-  var max = Math.max(id1, id2);
+function createMatchID(key, port, PID){
   var time = Date.now();
-  var matchID = sha256(time.toString() + min.toString() + max.toString());
+  var matchID = sha256(time.toString() + key);
 
-  games.set(min, {matchID:matchID, port:port});
-  games.set(max, {matchID:matchID, port:port});
+  games.set(key, {matchID:matchID, port:port, PID: PID});
 
   return matchID;
+}
+
+function getKey(id1, id2){
+  var min = Math.min(id1, id2);
+  var max = Math.max(id1, id2);
+
+  return (min + '+' + max);
 }
 
 var semaforo = false;
@@ -58,18 +62,24 @@ async function startNewGame(req, res)
 
   var ID1 = req.body.ID1;
   var ID2 = req.body.ID2;
-  if(games.has(ID1)){
-    var r = games.get(ID1);
+  
+  var key = getKey(ID1, ID2);
+  console.log(key);
+  if(games.has(key)){
+    var r = games.get(key);
     console.log(`Game Already Exists: ` + ID1 + ' ID2: ' + ID2 + 'port: ' + r.port);
-    currentGames++;
     semaforo = false;
-    return res.send({port:r.port, matchID:r.matchID}); 
+    return res.send({port:r.port, matchID:r.matchID});    
   }
+  currentGames++;
+
   console.log(`New Game ID1: ` + ID1 + ' ID2: ' + ID2);
+  console.log(games);
 
   var port = actualPort;
-  startNewServer();
-  var matchID = createMatchID(ID1, ID2, port)
+  
+  var matchID = createMatchID(key, port, currentPID);
+  currentPID = startNewServer();
 
   semaforo = false;
 
@@ -85,18 +95,19 @@ async function finishGame(req, res)
   var deletedOneGame = false;
 
   var ID1 = req.body.ID1;
-  if(games.has(ID1)){
-    freePorts.push(games.get(ID1).port);
-    games.delete(ID1);
+  var ID2 = req.body.ID2;
+
+  var key = getKey(ID1, ID2);
+
+  if(games.has(key)){
+    var r = games.get(key);
+    freePorts.push(r.port);
+    games.delete(key);
+    console.log(`Game Finish ID1: ` + ID1 + ' ID2: ' + ID2 + ' key: ' + key);
+    r.PID.kill();
     deletedOneGame = true;
   }
 
-  var ID2 = req.body.ID2;
-  if(games.has(ID2)){
-    games.delete(ID2);
-    deletedOneGame = true;
-  }
-  console.log(`Game Finish ID1: ` + ID1 + ' ID2: ' + ID2);
   if(deletedOneGame)
     currentGames--;
 
