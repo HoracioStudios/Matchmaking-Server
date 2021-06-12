@@ -1,4 +1,4 @@
-const MAX_GAMES = 5;
+const MAX_GAMES = 2;
 const THIS_SERVER_PORT = 25564;
 const BASE_PORT = 25566;
 var actualPort = 0;
@@ -61,8 +61,8 @@ async function startNewGame(req, res)
   if(games.has(ID1)){
     var r = games.get(ID1);
     console.log(`Game Already Exists: ` + ID1 + ' ID2: ' + ID2 + 'port: ' + r.port);
-    semaforo = false;
     currentGames++;
+    semaforo = false;
     return res.send({port:r.port, matchID:r.matchID}); 
   }
   console.log(`New Game ID1: ` + ID1 + ' ID2: ' + ID2);
@@ -93,7 +93,6 @@ async function finishGame(req, res)
 
   var ID2 = req.body.ID2;
   if(games.has(ID2)){
-    freePorts.push(games.get(ID2).port);
     games.delete(ID2);
     deletedOneGame = true;
   }
