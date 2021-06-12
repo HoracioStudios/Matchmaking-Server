@@ -708,12 +708,18 @@ function leaveQueue(req, res)
   if(!PROCESS_AUTHENTICATION) id = req.body.id;
   else id = req.user.id;
   
+  while(waitSearchPair) await sleep(5);
+  
+  waitSearchPair = true;
+  
   var i = onlineUsers.findIndex(p => p.playerData.id == id);
 
   if(i < 0)
     return res.status(404).send({ message: "Este usuario no está en la lista" });
 
   onlineUsers.splice(i, 1);
+
+  waitSearchPair = false;
 
   return res.sendStatus(200);
 }
