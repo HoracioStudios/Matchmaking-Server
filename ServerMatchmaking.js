@@ -32,6 +32,7 @@ const URI_PATH = './sensitive/uri.uri';
 
 const MongoJS = require("./MongoJS/mongoJS.js");
 
+
 if(USE_REDEFINITION)
 {
 
@@ -221,9 +222,9 @@ async function signIn(req, res)
   try
   {
     if(PROCESS_AUTHENTICATION && req.body.rating !== undefined && req.body.RD !== undefined)
-      await MongoJS.addPlayer(ID, { rating: req.body.rating, RD: req.body.RD }, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});  
+      await MongoJS.addPlayer(ID, { rating: req.body.rating, RD: req.body.RD }, {nick: nick, email: email, password: password, creation: Date.now()});  
     else
-      await MongoJS.addPlayer(ID, defaultParameters, {nick: nick, email: email, password: password, salt: "", creation: (new Date()).toString()});
+      await MongoJS.addPlayer(ID, defaultParameters, {nick: nick, email: email, password: password, creation: Date.now()});
     
     ID++;
   }
@@ -666,17 +667,6 @@ function leaveQueue(req, res)
   return res.sendStatus(200);
 }
 server.delete('/matchmaking', authenticateJWT, leaveQueue);
-
-
-/////////////////////////////////////////////
-//TO DO
-/////////////////////////////////////////////
-
-//recuperación cuenta (contraseña nueva?)
-
-//cambio pass y nick
-
-//access tokens??? salt???
 
 // Comprobación de la versión actual del juego
 // antes de hacer logIn

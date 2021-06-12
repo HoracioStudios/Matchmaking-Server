@@ -23,13 +23,16 @@ async function playerDataProcessing (playerID, gameResult, database, playerColle
     else if (avg < 0.5) loss++;
     else draw++;
 
+    gameResult.timeStamp = Date.now();
+    gameResult.lastT = -1;
+
     // busca el id exacto del jugador
     var filter = { id: playerID };
     var options = { };
     var update = {
       $push: { pending: gameResult },
       $inc : { wins: win, losses: loss, draws: draw, totalTime: addTime, totalGames: 1, totalAccuracy: gameResult.accuracy, totalDmg: gameResult.dmgDealt },
-      $set: { lastGame: (new Date()).toString() }
+      $set: { lastGame: Date.now() }
     };
 
     var playerChar = gameResult.playerChar.replace(' ', '').replace("(Clone)", '');
