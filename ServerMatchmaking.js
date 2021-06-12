@@ -575,7 +575,20 @@ async function addToQueue(req, res)
     return res.status(502).send({message: "Base de datos no acepta conexión"});
   }
   
-  onlineUsers.push( { playerData: player, found: false, waitTime: waitTime, lastCheck: Date.now() } );
+  while(waitSearchPair) await sleep(5);
+  
+  waitSearchPair = true;
+
+  var i = 0;
+
+  i = onlineUsers.findIndex(p => p.playerData.id == id);
+  
+  if(i < 0)
+    onlineUsers.push( { playerData: player, found: false, waitTime: waitTime, lastCheck: Date.now() } );
+  else
+    onlineUsers[i] = { playerData: player, found: false, waitTime: waitTime, lastCheck: Date.now() };
+
+  waitSearchPair = false;
 
   //enviar algo??
 
