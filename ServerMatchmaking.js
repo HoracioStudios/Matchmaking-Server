@@ -715,7 +715,10 @@ function leaveQueue(req, res)
   var i = onlineUsers.findIndex(p => p.playerData.id == id);
 
   if(i < 0)
+  {
+    waitSearchPair = false;
     return res.status(404).send({ message: "Este usuario no está en la lista" });
+  }
 
   onlineUsers.splice(i, 1);
 
