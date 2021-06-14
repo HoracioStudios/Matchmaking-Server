@@ -35,7 +35,7 @@ const MongoJS = require("./MongoJS/mongoJS.js");
 /*
   version
 */
-const versionCheck = '1.0.1';
+const versionCheck = '1.0.4';
 
 
 if(USE_REDEFINITION)
@@ -54,7 +54,7 @@ const defaultParameters = { rating: 1500, RD: 350 };
 
 //NOTA: poner esto a lo que pongamos de espera en la búsqueda
 //const ttlMilliseconds = 600000;
-const ttlMilliseconds = 30000;
+const ttlMilliseconds = 20000;
 
 //import express from 'express';
 const Express = require('express');
@@ -701,7 +701,7 @@ server.get('/matchmaking', authenticateJWT, searchPair);
 
 //salirse de la cola (tanto por cancelado como por haber encontrado pareja)
 //IMPORTANTE: SALIR SOLO DESPUÉS DE HABER EMPAREJADO A AMBOS EN LA SALA. NO ANTES.
-function leaveQueue(req, res)
+async function leaveQueue(req, res)
 {
   var id;
 

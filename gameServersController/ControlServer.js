@@ -55,11 +55,6 @@ async function startNewGame(req, res)
 
   semaforo = true;
 
-  if(currentGames == MAX_GAMES){ //Envio de error por que el servidor esta lleno
-    semaforo = false;
-    return res.sendStatus(503);
-  }
-
   var ID1 = req.body.ID1;
   var ID2 = req.body.ID2;
   
@@ -71,6 +66,12 @@ async function startNewGame(req, res)
     semaforo = false;
     return res.send({port:r.port, matchID:r.matchID});    
   }
+
+  if(currentGames == MAX_GAMES){ //Envio de error por que el servidor esta lleno
+    semaforo = false;
+    return res.sendStatus(503);
+  }
+  
   currentGames++;
 
   console.log(`New Game ID1: ` + ID1 + ' ID2: ' + ID2);
@@ -92,7 +93,6 @@ async function finishGame(req, res)
   while(semaforo) await sleep(5);
 
   semaforo = true;  
-  var deletedOneGame = false;
 
   var ID1 = req.body.ID1;
   var ID2 = req.body.ID2;
@@ -105,11 +105,8 @@ async function finishGame(req, res)
     games.delete(key);
     console.log(`Game Finish ID1: ` + ID1 + ' ID2: ' + ID2 + ' key: ' + key);
     r.PID.kill();
-    deletedOneGame = true;
-  }
-
-  if(deletedOneGame)
     currentGames--;
+  }
 
   semaforo = false;
 
