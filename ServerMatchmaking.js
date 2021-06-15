@@ -200,15 +200,13 @@ async function availability(req, res)
 
 server.get('/accounts/check-availability', availability);
 
-// Registro de un nuevo jugador
-// parámetros json: nick, email, password
-//asumimos que ya se ha verificado que no existan esos credenciales
-// envía: {message: message}
-
 var ID = 0;
 
 var isProcessing = false;
 
+
+// Registro de un nuevo jugador
+// asumimos que ya se ha verificado que no existan esos credenciales
 async function signIn(req, res)
 {
   var nick = req.body.nick;
@@ -248,11 +246,7 @@ async function signIn(req, res)
 server.post('/accounts', signIn);
 
 
-// Se usa para borrar una cuenta. POR AHORA Se envía email o nick (o ambos, pero email tiene preferencia) y la contraseña hasheada
-// parámetros json: nick, email, password
-// envía: {message: message}
-// message es para nosotros
-// (empleamos estándar de HTTP) => 200 = no hay errores, 400 = error de cliente
+// Se usa para borrar una cuenta
 async function deleteAccount(req, res)
 {
   var id;
@@ -274,11 +268,8 @@ async function deleteAccount(req, res)
 }
 server.delete('/accounts', authenticateJWT, deleteAccount);
 
-// Se usa para hacer log in de los jugadores. Se envía email o nick (o ambos, pero email tiene preferencia) y la contraseña hasheada
-// parámetros json: nick, email, password
-// envía: {message: message}
-// message es para nosotros
-// (empleamos estándar de HTTP) => 200 = no hay errores, 400 = error de cliente
+
+// Se usa para hacer log in de los jugadores. Se envía nick y la contraseña hasheada
 async function verifyLogin(nick, password)
 {
   var query = {};
@@ -307,6 +298,7 @@ async function verifyLogin(nick, password)
   return player;
 }
 
+// Servicio para hacer log in de los jugadores
 async function logIn(req, res)
 {
   var nick = req.body.nick;
@@ -337,6 +329,8 @@ async function logIn(req, res)
 }
 server.post('/accounts/sessions', logIn);
 
+
+// Cierre de sesión y eliminación de refresh token
 function logOut(req, res)
 {
   const { refreshToken } = req.body;
@@ -351,6 +345,7 @@ function logOut(req, res)
 }
 server.delete('/accounts/sessions', authenticateJWT, logOut);
 
+// Refresco de sesión
 async function refreshSession(req, res)
 {
   const { refreshToken } = req.body;
@@ -378,8 +373,8 @@ async function refreshSession(req, res)
 server.post('/accounts/sessions/refresh', refreshSession);
 
 
-//get que devuelva la info de partidas de un jugador (victorias, derrotas, etc)
-      //server.get('/getInfo') y luego la URL de acceso sería "/getInfo/?playerID=x" => dentro de la función lo sacas con req.query.playerID
+//get que devuelva la info de un jugador
+// /accounts/by-id/:id y /accounts/by-nick/:nick, sustituyendo :id o :nick por el identificador o el nombre de usuario respectivamente
 async function getInfo(req, res)
 {
   var id = parseInt(req.params.id);
@@ -450,15 +445,14 @@ server.post('/accounts/rounds', authenticateJWT, sendRoundInfo);
 /////////////////////////////////////////////
 
 
-// Devuelve la lista de usuarios online (IDs de jugadores)
-// envía: {status: errorCode, onlineUsers: onlineUsers}
+// Devuelve la lista de usuarios online
 server.get('/matchmaking/user-list', (req, res) => {
 
   return res.send({ onlineUsers: onlineUsers });
 });
 
-//NOTA: esto se hace por petición, el emparejamiento ocurre cada vez que se llama al servicio. Asumo que está chido así.
 
+//limpieza de usuarios no activos en la lista de espera
 function timeToLiveCleanup(onlineUserList, i)
 {
 
@@ -495,6 +489,7 @@ function timeToLiveCleanup(onlineUserList, i)
   return spliceOffset;
 }
 
+//función que realiza el emparejamiento
 function makeTheMatch(user, onlineUserList)
 {
   var userData = user.playerData;
@@ -550,8 +545,7 @@ function makeTheMatch(user, onlineUserList)
   return bestRival;
 }
 
-//proceso matchmaking
-//IMPORTANTE: DEBE SEGUIR HACIÉNDOSE HASTA QUE AMBOS ESTÉN EN LA SALA. POR SI SE DESCONECTA EL OPONENTE.
+//añade a un jugador a la lista de espera
 async function addToQueue(req, res)
 {
   var id;
@@ -598,7 +592,7 @@ server.post('/matchmaking', authenticateJWT, addToQueue);
 
 var waitSearchPair = false;
 
-//proceso matchmaking
+//petición de búsqueda de pareja
 //IMPORTANTE: DEBE SEGUIR HACIÉNDOSE HASTA QUE AMBOS ESTÉN EN LA SALA. POR SI SE DESCONECTA EL OPONENTE.
 async function searchPair(req, res)
 {
@@ -730,12 +724,12 @@ server.delete('/matchmaking', authenticateJWT, leaveQueue);
 
 // Comprobación de la versión actual del juego
 // antes de hacer logIn
-// cómo sacamos la versión? la ponemos en la base de datos?
 server.get('/version', (req, res) => {
   var version = "1.0.0";
   return res.send({version: version});
 });
 
+//función de inicio. Busca si existe un archivo con la URI privada
 async function startup()
 {
   console.log(`Server is running on port ${port}`);
