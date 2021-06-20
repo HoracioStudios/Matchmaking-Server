@@ -35,7 +35,7 @@ const MongoJS = require("./MongoJS/mongoJS.js");
 /*
   version
 */
-const versionCheck = '1.0.4';
+const versionCheck = '1.0.6';
 
 
 if(USE_REDEFINITION)
